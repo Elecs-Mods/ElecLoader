@@ -1,0 +1,138 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+plugins {
+    id "java-library"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
+    id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.7"
+}
+
+group = "nl.elec332.minecraft.repacked"
+version = "0"
+
+repositories {
+    mavenCentral()
+    ivy {
+        url "https://github.com/"
+        patternLayout {
+            artifact "[organisation]/[module]/archive/[revision].[ext]"
+        }
+        metadataSources {
+            artifact()
+        }
+    }
+}
+
+configurations {
+    busZip {
+    }
+    mavenZip {
+    }
+    busDeps {
+    }
+    shadowSource {
+    }
+}
+
+sourceSets {
+    main {
+        java.srcDir("build/srcDirBus")
+        java.srcDir("build/srcDirMaven")
+    }
+}
+
+tasks.register("makeMiniJar", Jar) {
+    archiveBaseName = "minijar"
+    project.configurations.busDeps.resolve().each {
+        from zipTree(it).matching {
+            include("net/neoforged/bus/**/*.*")
+            include("org/apache/maven/artifact/versioning/**/*.*")
+        }
+    }
+}
+
+//forge: cb38ccd
+dependencies {
+    busZip group: "neoforged", name: "Bus", version: "ea4401c", ext: "zip"
+    mavenZip group: "apache", name: "Maven", version: "3cebbf7", ext: "zip"
+    busDeps("net.neoforged:bus:7.2.0") {
+        transitive = false
+    }
+    busDeps("org.apache.maven:maven-artifact:3.8.5") {
+        transitive = false
+    }
+    shadowSource("net.jodah:typetools:0.6.3")
+    shadowSource tasks.makeMiniJar.outputs.files
+}
+
+tasks.register("makeBusJar", ShadowJar) {
+    configurations = [project.configurations.shadowSource]
+
+    enableRelocation true
+    relocationPrefix "nl.elec332.minecraft.repackaged"
+}
+
+tasks.register("fakeBusClasses", Copy) {
+    dependsOn("makeBusJar")
+    from zipTree(tasks.makeBusJar.outputs.files.asPath)
+    into sourceSets.main.java.destinationDirectory
+}
+
+tasks.compileJava.dependsOn "fakeBusClasses"
+tasks.jar.enabled false
+tasks.javadoc.enabled false
+tasks.compileJava.enabled false
+tasks.shadowJar.enabled false
+
+tasks.register("downloadBusSource", Copy) {
+    doFirst {
+        file("build/srcDirBus/").deleteDir()
+    }
+
+    includeEmptyDirs = false
+    from zipTree(configurations.busZip.resolve().iterator().next()).matching {
+        exclude "**/module-info.java"
+        exclude "**/bus-*/**/*.java"
+        include "**/src/main/java/**/*.java"
+        filter { line ->
+            line.replace("net.neoforged.bus", "nl.elec332.minecraft.repackaged.net.neoforged.bus")
+        }
+    }
+    eachFile {
+        var fn = it.getPath().split("src/main/java/")
+        assert fn.length == 2
+        it.setPath(fn[1])
+    }
+    into "build/srcDirBus/nl/elec332/minecraft/repackaged"
+}
+
+tasks.register("downloadMavenSource", Copy) {
+    doFirst {
+        file("build/srcDirMaven/").deleteDir()
+    }
+
+    includeEmptyDirs = false
+    from zipTree(configurations.mavenZip.resolve().iterator().next()).matching {
+        include "**/maven-artifact/src/main/java/org/apache/maven/artifact/versioning/**/*.java"
+        filter { line ->
+            line.replace("org.apache.maven.artifact.versioning", "nl.elec332.minecraft.repackaged.org.apache.maven.artifact.versioning")
+        }
+    }
+    eachFile {
+        var fn = it.getPath().split("src/main/java/")
+        assert fn.length == 2
+        it.setPath(fn[1])
+    }
+    into "build/srcDirMaven/nl/elec332/minecraft/repackaged"
+}
+
+tasks.register("downloadSources") {
+    dependsOn("downloadBusSource")
+    dependsOn("downloadMavenSource")
+}
+
+var thisName = name
+rootProject.idea.project.settings {
+    taskTriggers {
+        afterSync thisName + ":downloadSources"
+    }
+}

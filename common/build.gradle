@@ -1,0 +1,32 @@
+modloader {
+    metadata {
+        issues "https://github.com"
+        sources "https://github.com/"
+        mod {
+            homepage "homepage"
+            logo("assets/elecloader/icon.png")
+        }
+        dependsOn("minecraft") {
+            versionRange(">=1.20.4", "<1.21")
+        }
+    }
+}
+
+configurations {
+    bus {
+    }
+    implementation.extendsFrom bus
+}
+
+dependencies {
+    bus(project(":repackaged"))
+
+    compileOnly "org.ow2.asm:asm-commons:9.5"
+    compileOnly "org.spongepowered:mixin:0.8.5"
+}
+
+jar {
+    configurations.bus.resolve().each {
+        from zipTree(it)
+    }
+}

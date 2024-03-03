@@ -1,0 +1,48 @@
+sourceSets {
+
+    modImpl {
+        compileClasspath += main.compileClasspath
+    }
+
+    modRun {
+        runtimeClasspath += rootProject.tasks.jar.outputs.files
+    }
+
+}
+
+modloader {
+    metadata {
+        loader "elecjava"
+    }
+    runtimeSource = sourceSets.modRun
+
+    mixin {
+        generateOnly = true
+        plugin = "nl.elec332.minecraft.loader.impl.fmod.ForgeMixinPlugin"
+    }
+}
+
+generateModInfo.enabled false
+
+compileModRunJava.enabled = false
+processModRunResources.enabled = false
+generateMixinJson.source sourceSets.modImpl
+mkdir("build/resources/modRun")
+mkdir("build/classes/java/modRun")
+
+jar {
+    manifest {
+        attributes(["FMLModType": "LANGPROVIDER"])
+    }
+}
+
+configurations {
+    modRunImplementation.extendsFrom implementation
+}
+
+tasks.modRunClasses.dependsOn(rootProject.tasks.jar)
+
+dependencies {
+    compileOnly(project(":repackaged"))
+    compileOnly(project(":common"))
+}

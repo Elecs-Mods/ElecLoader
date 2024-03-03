@@ -1,0 +1,4 @@
+mixin_version=${mixin_version}
+
+fabric_loader_version=${fabric_loader_version}
+quilt_loader_version=${quilt_loader_version}

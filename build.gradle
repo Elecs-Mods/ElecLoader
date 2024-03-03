@@ -1,0 +1,51 @@
+plugins {
+    id "maven-publish"
+}
+
+group = mod_group_id
+version = mod_version
+
+jar {
+    manifest {
+        attributes(["FMLModType": "LANGPROVIDER", "Implementation-Version": version])
+    }
+}
+
+tasks.withType(GenerateModuleMetadata.class).configureEach(meta -> meta.setEnabled(false));
+
+subprojects {
+    
+    if (project.modProject) {
+        afterEvaluate {
+            rootProject.jar {
+                dependsOn jar
+                from zipTree(jar.outputs.files.asPath)
+            }
+            if (!project.hasModLoader) { //Common project
+                rootProject.publishing.publications.modPublication {
+                    artifact sourcesJar
+                    artifact javadocJar
+                }
+            }
+        }
+    }
+    if (!project.hasModLoader) {
+        return
+    }
+    modloader {
+        addCommonDependency = false
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            url "file://" + System.getenv("local_maven")
+        }
+    }
+    publications {
+        modPublication(MavenPublication) {
+            from components.java
+        }
+    }
+}
