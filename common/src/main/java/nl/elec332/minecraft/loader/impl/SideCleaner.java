@@ -3,6 +3,7 @@ package nl.elec332.minecraft.loader.impl;
 import com.google.common.collect.Streams;
 import nl.elec332.minecraft.loader.api.distmarker.OnlyIn;
 import nl.elec332.minecraft.loader.api.distmarker.OnlyIns;
+import nl.elec332.minecraft.loader.util.IClassTransformer;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
@@ -19,20 +20,34 @@ import java.util.stream.Collectors;
  * <p>
  * Mostly copied from: <a href="https://github.com/neoforged/FancyModLoader/blob/main/loader/src/main/java/net/neoforged/fml/common/asm/RuntimeDistCleaner.java">NeoForge</a>
  */
-public final class SideCleaner {
+public final class SideCleaner implements IClassTransformer {
 
-    public SideCleaner(Logger logger, String dist) {
+    public SideCleaner(Logger logger, String dist, Set<String> targets) {
         this.logger = logger;
         this.dist = dist;
+        this.targets = Collections.unmodifiableSet(targets);
+        logger.info("Initializing SideCleaner for " + this.targets.size() + " target" + (this.targets.size() == 1 ? "" : "s"));
     }
 
     private final Logger logger;
     private final String dist;
+    private final Set<String> targets;
 
     private static final String ONLYIN = Type.getDescriptor(OnlyIn.class);
     private static final String ONLYINS = Type.getDescriptor(OnlyIns.class);
 
-    public void processClass(final ClassNode classNode) {
+    @Override
+    public String getName() {
+        return "SideCleaner";
+    }
+
+    @Override
+    public Set<String> getTargetClasses() {
+        return this.targets;
+    }
+
+    @Override
+    public boolean processClass(final ClassNode classNode) {
         if (dist == null) {
             throw new IllegalStateException();
         }
@@ -108,6 +123,8 @@ public final class SideCleaner {
                 }
             }
         }
+
+        return true;
     }
 
     @SuppressWarnings("unchecked")

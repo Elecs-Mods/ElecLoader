@@ -10,18 +10,17 @@ import nl.elec332.minecraft.loader.abstraction.AbstractModLoader;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
-import nl.elec332.minecraft.loader.api.modloader.IModContainer;
-import nl.elec332.minecraft.loader.api.modloader.IModFile;
-import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
-import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
+import nl.elec332.minecraft.loader.api.modloader.*;
 import nl.elec332.minecraft.loader.impl.forgelang.ForgeModContainer;
 import nl.elec332.minecraft.repackaged.org.apache.maven.artifact.versioning.ArtifactVersion;
 import nl.elec332.minecraft.repackaged.org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -39,6 +38,15 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
             @Override
             public void scanFile(Consumer<Path> consumer) {
                 this.mf.getProvider().scanFile(this.mf, consumer);
+            }
+
+            @Override
+            public Optional<Path> findPath(String file) {
+                Path p = mf.findResource(file);
+                if (Files.exists(p)) {
+                    return Optional.of(p);
+                }
+                return Optional.empty();
             }
 
             @Nullable

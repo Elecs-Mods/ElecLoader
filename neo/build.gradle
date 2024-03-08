@@ -1,39 +1,26 @@
-import net.neoforged.jarjar.metadata.*
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion
-import org.apache.maven.artifact.versioning.VersionRange
-
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
-import java.util.stream.Collectors
-
-tasks.register("modImplJar", Jar) {
-    archiveBaseName = "ElecLoaderMod"
-    from sourceSets.modImpl.output
-    from project(":forge").sourceSets.modImpl.output
-    manifest.attributes(["FMLModType": "MOD", "MixinConfigs": "elecloader.FORGE.mixins.json"])
-}
+println "ProjectNF: " + name
 
 sourceSets {
 
     modImpl {
         compileClasspath += main.compileClasspath
+        java.srcDir("src/modImplShared/java")
     }
 
     modRun {
+        java.setSrcDirs([])
+        resources.setSrcDirs([])
         runtimeClasspath += rootProject.tasks.jar.outputs.files
     }
 
 }
 
 modloader {
-    metadata {
-        loader "elecjava"
-    }
     mixin {
         plugin = "nl.elec332.minecraft.loader.impl.fmod.ForgeLikeMixinPlugin"
     }
     runtimeSource = sourceSets.modRun
-    importMetadata project(":forge")
+    importMetadata findProject(":forge")
 }
 
 generateModInfo.source sourceSets.modImpl
@@ -41,8 +28,8 @@ generateMixinJson.source sourceSets.modImpl
 
 compileModRunJava.enabled = false
 processModRunResources.enabled = false
-mkdir("build/resources/modRun")
-mkdir("build/classes/java/modRun")
+mkdir(compileModRunJava.destinationDirectory)
+mkdir(processModRunResources.destinationDir)
 
 jar {
     manifest {
@@ -50,36 +37,17 @@ jar {
     }
 }
 
+tasks.register("modImplJar", Jar) {
+    archiveBaseName = "ElecLoaderMod"
+    from sourceSets.modImpl.output
+    manifest.attributes(["FMLModType": "MOD"])
+}
+
 configurations {
     modRunImplementation.extendsFrom implementation
 }
 
 tasks.modRunClasses.dependsOn(rootProject.tasks.jar)
-
-jar {
-    var jijCopy = it.getMainSpec().addChild()
-    jijCopy.into("META-INF/jarjar")
-
-    var jijFiles = files(tasks.modImplJar.outputs)
-    var mdjp = getProject().file("build/jij/metadata.json")
-
-    jijCopy.from(jijFiles)
-    jijCopy.from(mdjp)
-
-    doFirst {
-        try {
-            mdjp.parentFile.mkdirs()
-            Files.deleteIfExists(mdjp.toPath())
-            Files.write(mdjp.toPath(), MetadataIOHandler.toLines(new Metadata(jijFiles.getFiles().stream().map {
-                var fn = it.name.split("-")
-                println it
-                return new ContainedJarMetadata(new ContainedJarIdentifier(getProject().group, it.name.replace("-" + fn[fn.length - 1], "")), new ContainedVersion(VersionRange.createFromVersionSpec("[" + version + ",)"), new DefaultArtifactVersion(version)), "META-INF/jarjar/" + it.name, false)
-            }.collect(Collectors.toList()))), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-        } catch(Exception e) {
-            throw new RuntimeException(e)
-        }
-    }
-}
 
 dependencies {
     compileOnly(project(":repackaged"))

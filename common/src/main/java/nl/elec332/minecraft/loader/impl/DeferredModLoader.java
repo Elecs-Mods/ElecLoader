@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 /**
  * Created by Elec332 on 06-02-2024
  */
-public class DeferredModLoader implements IModLoader {
+public final class DeferredModLoader implements IModLoader {
 
     static DeferredModLoader INSTANCE;
 
@@ -95,7 +95,7 @@ public class DeferredModLoader implements IModLoader {
                 throw new IllegalStateException("Container mismatch for " + name);
             }
         });
-        if (ElecModLoader.getModLoader().getModContainer(ElecLoaderMod.MODID) != null || DeferredModLoader.INSTANCE.getModContainer(ElecLoaderMod.MODID) == null) {
+        if (ElecModLoader.getModLoader().getModContainer(ElecLoaderMod.MODID) == null || DeferredModLoader.INSTANCE.getModContainer(ElecLoaderMod.MODID) == null) {
             crash();
         }
     }

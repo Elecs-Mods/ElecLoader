@@ -7,6 +7,7 @@ import java.lang.annotation.ElementType;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -26,6 +27,8 @@ public interface IModFile {
     Set<RawAnnotationData> getAnnotations();
 
     Set<ClassData> getClasses();
+
+    Optional<Path> findPath(String file);
 
     @Nullable
     String getComparableRootPath();

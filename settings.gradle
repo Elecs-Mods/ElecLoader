@@ -17,5 +17,5 @@ moddev {
     enableForge()
     enableNeoForge()
     enableFabric()
-    //enableQuilt() //Besides it tracking users, you cant even disable a fabric mod from being loaded by config. Disabled until they get their shit together
+//    enableQuilt() //Besides it tracking users, you cant even disable a fabric mod from being loaded by config. Disabled until they get their shit together
 }

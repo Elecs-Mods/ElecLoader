@@ -1,6 +1,5 @@
 package nl.elec332.minecraft.loader.impl;
 
-import nl.elec332.minecraft.loader.ElecLoaderMod;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
@@ -9,6 +8,8 @@ import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.Event;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 
 import java.util.*;
@@ -31,7 +32,6 @@ public final class ElecModLoader {
             throw new IllegalStateException();
         }
         ranInit = true;
-        LogManager.getLogger("SideCleaner").info("Initializing SideCleaner");
         try {
             dataHandler = AnnotationDataHandler.INSTANCE.identify(DeferredModLoader.INSTANCE.getModFiles(), DeferredModLoader.INSTANCE::hasWrongSideOnly);
             modLoader = new ElecModLoader(dataHandler::getAnnotationList);
@@ -73,7 +73,14 @@ public final class ElecModLoader {
         dataHandler = null;
     }
 
+    @NotNull
     public static ElecModLoader getModLoader() {
+        if (modLoader == null) {
+            if (ranInit) {
+                throw new UnsupportedOperationException();
+            }
+            throw new IllegalStateException("Mixin setup failed!");
+        }
         return modLoader;
     }
 
@@ -84,6 +91,8 @@ public final class ElecModLoader {
         if (!SidedTest.testSide(DeferredModLoader.INSTANCE.getDist())) {
             throw new RuntimeException("SideCleaner isn't active!");
         }
+
+        modLoader.logger.debug("Environment check succeeded");
     }
 
     public static void checkModLoader() {
@@ -91,15 +100,19 @@ public final class ElecModLoader {
     }
 
     private ElecModLoader(Function<Type, Set<IAnnotationData>> dataHandler) {
-        discoveredMods = dataHandler.apply(LoaderConstants.MODANNOTATION).stream()
+        this.discoveredMods = dataHandler.apply(LoaderConstants.MODANNOTATION).stream()
                 .collect(Collectors.toMap(ad -> (String) ad.getAnnotationInfo().get("value"), IAnnotationData::getClassType, (t1, t2) -> null));
-        containers = new HashMap<>();
-        modIds = Collections.unmodifiableSet(discoveredMods.keySet());
+        this.containers = new HashMap<>();
+        this.modIds = Collections.unmodifiableSet(this.discoveredMods.keySet());
+        this.logger = LogManager.getLogger("ElecModLoader");
+
+        this.logger.debug("Discovered mods: " + this.modIds);
     }
 
     private final Set<String> modIds;
     private Map<String, Type> discoveredMods;
     final Map<String, ElecModContainer> containers;
+    private final Logger logger;
 
     private void checkMods() {
         Set<String> missing = new HashSet<>();
@@ -182,7 +195,7 @@ public final class ElecModLoader {
         dataHandler = null;
         checkMods();
         AnnotationDataHandler.INSTANCE.preProcess();
-        ElecLoaderMod.LOGGER.info("Finalized modlist");
+        logger.info("Finalized modlist");
         AnnotationDataHandler.INSTANCE.process(ModLoadingStage.PRE_CONSTRUCT);
     }
 

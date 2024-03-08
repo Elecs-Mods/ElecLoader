@@ -5,35 +5,50 @@ sourceSets {
     }
 
     modRun {
+        java.setSrcDirs([])
+        resources.setSrcDirs([])
         runtimeClasspath += rootProject.tasks.jar.outputs.files
     }
 
 }
 
 modloader {
-    metadata {
-        loader "elecjava"
+    mixin {
+        plugin = "nl.elec332.minecraft.loader.impl.fmod.ForgeLikeMixinPlugin"
     }
-    runtimeSource = sourceSets.modRun
-
     mixin {
         generateOnly = true
         plugin = "nl.elec332.minecraft.loader.impl.fmod.ForgeMixinPlugin"
     }
+    addMixinsToManifest = false
+    runtimeSource = sourceSets.modRun
+    importMetadata findProject(":neo")
 }
 
-generateModInfo.enabled false
+compileModImplJava {
+    if (findProject(":neo") == null) {
+        source("../neo/src/modImplShared/java")
+    }
+}
+
+generateModInfo.source sourceSets.modImpl
+generateMixinJson.source sourceSets.modImpl
 
 compileModRunJava.enabled = false
 processModRunResources.enabled = false
-generateMixinJson.source sourceSets.modImpl
-mkdir("build/resources/modRun")
-mkdir("build/classes/java/modRun")
+mkdir(compileModRunJava.destinationDirectory)
+mkdir(processModRunResources.destinationDir)
 
 jar {
     manifest {
         attributes(["FMLModType": "LANGPROVIDER"])
     }
+}
+
+tasks.register("modImplJar", Jar) {
+    archiveBaseName = "ElecLoaderMod"
+    from sourceSets.modImpl.output
+    manifest.attributes(["FMLModType": "MOD", "MixinConfigs": "elecloader.FORGE.mixins.json"])
 }
 
 configurations {

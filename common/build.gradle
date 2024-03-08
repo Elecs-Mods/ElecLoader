@@ -9,6 +9,7 @@ modloader {
         dependsOn("minecraft") {
             versionRange(">=1.20.4", "<1.21")
         }
+        loader "elecjava"
     }
 }
 

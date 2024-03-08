@@ -1,3 +1,12 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+buildscript {
+    dependencies {
+        classpath "net.neoforged:JarJarMetadata:0.4.1"
+        classpath "com.github.johnrengelman:shadow:8.1.1"
+    }
+}
+
 plugins {
     id "maven-publish"
 }
@@ -5,13 +14,29 @@ plugins {
 group = mod_group_id
 version = mod_version
 
+tasks.register("modImplJar", ShadowJar) {
+    archiveBaseName = "ElecLoaderMod"
+
+    mergeServiceFiles()
+    transform(ManifestMergeTransformer)
+}
+
+tasks.register("makeJiJMeta", JijFile) {
+    dependsOn(tasks.modImplJar)
+    input = files(tasks.modImplJar.outputs)
+}
+
 jar {
     manifest {
         attributes(["FMLModType": "LANGPROVIDER", "Implementation-Version": version])
     }
+    into("META-INF/jarjar") {
+        from(tasks.makeJiJMeta.outputs)
+        from(tasks.modImplJar.outputs)
+    }
 }
 
-tasks.withType(GenerateModuleMetadata.class).configureEach(meta -> meta.setEnabled(false));
+tasks.withType(GenerateModuleMetadata.class).configureEach(meta -> meta.setEnabled(false))
 
 subprojects {
     
@@ -20,6 +45,9 @@ subprojects {
             rootProject.jar {
                 dependsOn jar
                 from zipTree(jar.outputs.files.asPath)
+            }
+            if (project.tasks.findByName("modImplJar") != null) {
+                rootProject.tasks.modImplJar.from(project.tasks.modImplJar.outputs)
             }
             if (!project.hasModLoader) { //Common project
                 rootProject.publishing.publications.modPublication {
@@ -44,8 +72,100 @@ publishing {
         }
     }
     publications {
-        modPublication(MavenPublication) {
+        create("modPublication", MavenPublication) {
             from components.java
         }
     }
+}
+
+///////////////////////////////////////////////////////////////////////
+
+import com.github.jengelman.gradle.plugins.shadow.transformers.TransformerContext
+import net.neoforged.jarjar.metadata.ContainedJarIdentifier
+import net.neoforged.jarjar.metadata.ContainedJarMetadata
+import net.neoforged.jarjar.metadata.ContainedVersion
+import net.neoforged.jarjar.metadata.Metadata
+import net.neoforged.jarjar.metadata.MetadataIOHandler
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion
+import org.apache.maven.artifact.versioning.VersionRange
+import org.apache.tools.zip.ZipEntry
+import org.apache.tools.zip.ZipOutputStream
+
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
+import java.util.stream.Collectors
+
+import static java.util.jar.JarFile.MANIFEST_NAME
+
+
+abstract class JijFile extends DefaultTask {
+
+    JijFile() {
+        jsonFile.convention(project.layout.buildDirectory.file("jij/metadata.json"))
+    }
+
+    @InputFiles
+    FileCollection input
+
+    @OutputFile
+    abstract RegularFileProperty getJsonFile();
+
+    @TaskAction
+    void createFile() {
+        File mdjp = getJsonFile().asFile.get()
+        try {
+            mdjp.parentFile.mkdirs()
+            Files.deleteIfExists(mdjp.toPath())
+            Files.write(mdjp.toPath(), MetadataIOHandler.toLines(new Metadata(input.files.stream().map {
+                var fn = it.name.split("-")
+                return new ContainedJarMetadata(new ContainedJarIdentifier(getProject().group.toString(), fn[0]), new ContainedVersion(VersionRange.createFromVersionSpec("[" + project.version + ",)"), new DefaultArtifactVersion(project.version)), "META-INF/jarjar/" + it.name, false)
+            }.collect(Collectors.toList()))), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+        } catch(Exception e) {
+            throw new RuntimeException(e)
+        }
+    }
+
+}
+
+class ManifestMergeTransformer implements com.github.jengelman.gradle.plugins.shadow.transformers.Transformer {
+
+    private java.util.jar.Manifest manifest;
+
+    @Override
+    boolean canTransformResource(FileTreeElement element) {
+        MANIFEST_NAME.equalsIgnoreCase(element.relativePath.pathString)
+    }
+
+    @Override
+    void transform(TransformerContext context) {
+        try (InputStream is = context.is) {
+            if (manifest == null) {
+                manifest = new java.util.jar.Manifest(is)
+            } else {
+                java.util.jar.Manifest toMerge = new java.util.jar.Manifest(is)
+                for (Map.Entry<String, java.util.jar.Attributes> entry : toMerge.getEntries().entrySet()) {
+                    manifest.getEntries().put(entry.getKey(), entry.getValue())
+                }
+                manifest.mainAttributes.putAll(toMerge.mainAttributes)
+            }
+        }
+    }
+
+    @Override
+    boolean hasTransformedResource() {
+        return true
+    }
+
+    @Override
+    void modifyOutputStream(ZipOutputStream os, boolean preserveFileTimestamps) {
+        ZipEntry entry = new ZipEntry(MANIFEST_NAME)
+        entry.time = TransformerContext.getEntryTimestamp(preserveFileTimestamps, entry.time)
+        os.putNextEntry(entry)
+        if (manifest != null) {
+            ByteArrayOutputStream manifestContents = new ByteArrayOutputStream()
+            manifest.write(manifestContents)
+            os.write(manifestContents.toByteArray())
+        }
+    }
+
 }

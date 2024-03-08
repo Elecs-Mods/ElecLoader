@@ -5,16 +5,17 @@ import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import nl.elec332.minecraft.loader.impl.SideCleaner;
 import nl.elec332.minecraft.loader.util.AbstractDynamicMixinPlugin;
 import nl.elec332.minecraft.loader.util.DynamicURLLoader;
+import nl.elec332.minecraft.loader.util.IClassTransformer;
 import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
-import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -22,21 +23,17 @@ import java.util.function.Consumer;
  */
 public final class FabricLikeMixinPlugin extends AbstractDynamicMixinPlugin {
 
-    public FabricLikeMixinPlugin() {
-        this.sideCleaner = new SideCleaner(LogManager.getLogger("ElecLoader SideCleaner"), ElecModLoader.getDist().name());
-    }
-
-    private final SideCleaner sideCleaner;
-
     @Override
     protected void defineClass(String name, byte[] data) {
         findURLAdder().accept(DynamicURLLoader.create(name, data));
     }
 
     @Override
-    protected void collectMixinClasses(Consumer<String> classConsumer) {
+    protected void addTransformers(Consumer<IClassTransformer> registry) {
         ElecModLoader.initSideCleaner(dataHandler -> {
-            dataHandler.apply(Type.getType(OnlyIn.class)).forEach(ad -> classConsumer.accept(ad.getClassName().replace('.', '/')));
+            Set<String> sides = new HashSet<>();
+            dataHandler.apply(Type.getType(OnlyIn.class)).forEach(ad -> sides.add(ad.getClassType().getInternalName()));
+            registry.accept(new SideCleaner(LogManager.getLogger("ElecLoader SideCleaner"), ElecModLoader.getDist().name(), sides));
         });
     }
 
@@ -44,11 +41,6 @@ public final class FabricLikeMixinPlugin extends AbstractDynamicMixinPlugin {
     protected RuntimeException onLoadFailed(Exception source) {
         ElecModLoader.mixinFailed();
         return super.onLoadFailed(source);
-    }
-
-    @Override
-    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-        sideCleaner.processClass(targetClass);
     }
 
     private static Consumer<URL> findURLAdder() {

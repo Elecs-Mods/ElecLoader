@@ -1,6 +1,8 @@
 sourceSets {
 
     modRun {
+        java.setSrcDirs([])
+        resources.setSrcDirs([])
         runtimeClasspath += rootProject.tasks.jar.outputs.files
         runtimeClasspath += configurations.runtimeClasspath
     }

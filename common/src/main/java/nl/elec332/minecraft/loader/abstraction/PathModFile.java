@@ -114,6 +114,17 @@ public class PathModFile extends AbstractModFile implements IModFile.FileLister 
     }
 
     @Override
+    public Optional<Path> findPath(String file) {
+        for (Path root : root) {
+            Path path = root.resolve(file.replace("/", root.getFileSystem().getSeparator()));
+            if (Files.exists(path)) {
+                return Optional.of(path);
+            }
+        }
+        return Optional.empty();
+    }
+
+    @Override
     protected void scanFile() {
         scanFile(p -> {});
     }
