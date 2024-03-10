@@ -18,11 +18,15 @@ public final class ModServiceLoader {
     }
 
     public static <T> Set<T> loadModService(Class<T> type) {
+        return loadModService(ServiceLoader.load(type, IModLoader.INSTANCE.getModClassLoader()));
+    }
+
+    public static <T> Set<T> loadModService(ServiceLoader<T> type) {
         Set<T> ret = new HashSet<>();
-        ServiceLoader.load(type, IModLoader.INSTANCE.getModClassLoader()).stream().forEach(p -> {
+        type.stream().forEach(p -> {
             //ServiceLoader already loads classes before you get access to the data, so there's no point in doing this with fancy ASM annotation data stuff
             ModService d = p.type().getAnnotation(ModService.class);
-            if (d == null || !List.of(d.value()).contains(IModLoader.INSTANCE.getModLoaderType())) {
+            if (d != null && !List.of(d.value()).contains(IModLoader.INSTANCE.getModLoaderType())) {
                 return;
             }
             T value = p.get();

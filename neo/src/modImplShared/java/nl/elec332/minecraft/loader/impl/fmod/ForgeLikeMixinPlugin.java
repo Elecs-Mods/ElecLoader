@@ -2,11 +2,9 @@ package nl.elec332.minecraft.loader.impl.fmod;
 
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import nl.elec332.minecraft.loader.api.distmarker.OnlyIn;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import nl.elec332.minecraft.loader.impl.SideCleaner;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
-import org.apache.logging.log4j.LogManager;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -23,9 +21,7 @@ public class ForgeLikeMixinPlugin implements IMixinConfigPlugin {
 
     private void addTransformers(Consumer<IClassTransformer> registry) {
         ElecModLoader.initSideCleaner(dataHandler -> {
-            Set<String> sides = new HashSet<>();
-            dataHandler.apply(Type.getType(OnlyIn.class)).forEach(ad -> sides.add(ad.getClassType().getInternalName()));
-            registry.accept(new SideCleaner(LogManager.getLogger("ElecLoader SideCleaner"), ElecModLoader.getDist().name(), sides));
+            SideCleaner.register(registry, dataHandler);
         });
     }
 

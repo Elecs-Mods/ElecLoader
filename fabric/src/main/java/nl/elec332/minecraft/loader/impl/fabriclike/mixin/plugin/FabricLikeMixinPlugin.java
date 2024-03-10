@@ -1,21 +1,16 @@
 package nl.elec332.minecraft.loader.impl.fabriclike.mixin.plugin;
 
-import nl.elec332.minecraft.loader.api.distmarker.OnlyIn;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import nl.elec332.minecraft.loader.impl.SideCleaner;
 import nl.elec332.minecraft.loader.util.AbstractDynamicMixinPlugin;
 import nl.elec332.minecraft.loader.util.DynamicURLLoader;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
-import org.apache.logging.log4j.LogManager;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Type;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -31,9 +26,7 @@ public final class FabricLikeMixinPlugin extends AbstractDynamicMixinPlugin {
     @Override
     protected void addTransformers(Consumer<IClassTransformer> registry) {
         ElecModLoader.initSideCleaner(dataHandler -> {
-            Set<String> sides = new HashSet<>();
-            dataHandler.apply(Type.getType(OnlyIn.class)).forEach(ad -> sides.add(ad.getClassType().getInternalName()));
-            registry.accept(new SideCleaner(LogManager.getLogger("ElecLoader SideCleaner"), ElecModLoader.getDist().name(), sides));
+            SideCleaner.register(registry, dataHandler);
         });
     }
 

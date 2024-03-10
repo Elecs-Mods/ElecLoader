@@ -14,11 +14,16 @@ plugins {
 group = mod_group_id
 version = mod_version
 
+tasks.replace("jar", ShadowJar)
+
 tasks.register("modImplJar", ShadowJar) {
     archiveBaseName = "ElecLoaderMod"
 
     mergeServiceFiles()
     transform(ManifestMergeTransformer)
+    manifest {
+        attributes(["Implementation-Title": "modImpl"])
+    }
 }
 
 tasks.register("makeJiJMeta", JijFile) {
@@ -26,14 +31,25 @@ tasks.register("makeJiJMeta", JijFile) {
     input = files(tasks.modImplJar.outputs)
 }
 
-jar {
-    manifest {
-        attributes(["FMLModType": "LANGPROVIDER", "Implementation-Version": version])
-    }
+tasks.register("shadowWorkAround", Jar) {
+    archiveBaseName = "ShadowWorkaround"
     into("META-INF/jarjar") {
         from(tasks.makeJiJMeta.outputs)
         from(tasks.modImplJar.outputs)
     }
+}
+
+jar {
+    mergeServiceFiles()
+//    transform(ManifestMergeTransformer)
+    manifest { //TODO: ManifestMerger produces a perfectly valid (byte-for-byte identical) MF file, but somehow Forge shits itself on it
+        attributes(["FMLModType": "LANGPROVIDER", "Implementation-Version": version])
+    }
+    manifest {
+        attributes(["Implementation-Title": "all"])
+    }
+
+    from(files(tasks.shadowWorkAround.outputs))
 }
 
 tasks.withType(GenerateModuleMetadata.class).configureEach(meta -> meta.setEnabled(false))
@@ -43,8 +59,7 @@ subprojects {
     if (project.modProject) {
         afterEvaluate {
             rootProject.jar {
-                dependsOn jar
-                from zipTree(jar.outputs.files.asPath)
+                from jar.outputs
             }
             if (project.tasks.findByName("modImplJar") != null) {
                 rootProject.tasks.modImplJar.from(project.tasks.modImplJar.outputs)
@@ -81,11 +96,7 @@ publishing {
 ///////////////////////////////////////////////////////////////////////
 
 import com.github.jengelman.gradle.plugins.shadow.transformers.TransformerContext
-import net.neoforged.jarjar.metadata.ContainedJarIdentifier
-import net.neoforged.jarjar.metadata.ContainedJarMetadata
-import net.neoforged.jarjar.metadata.ContainedVersion
-import net.neoforged.jarjar.metadata.Metadata
-import net.neoforged.jarjar.metadata.MetadataIOHandler
+import net.neoforged.jarjar.metadata.*
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.apache.maven.artifact.versioning.VersionRange
 import org.apache.tools.zip.ZipEntry
@@ -97,7 +108,6 @@ import java.util.stream.Collectors
 
 import static java.util.jar.JarFile.MANIFEST_NAME
 
-
 abstract class JijFile extends DefaultTask {
 
     JijFile() {
@@ -105,7 +115,7 @@ abstract class JijFile extends DefaultTask {
     }
 
     @InputFiles
-    FileCollection input
+    abstract ConfigurableFileCollection getInput();
 
     @OutputFile
     abstract RegularFileProperty getJsonFile();
@@ -118,7 +128,7 @@ abstract class JijFile extends DefaultTask {
             Files.deleteIfExists(mdjp.toPath())
             Files.write(mdjp.toPath(), MetadataIOHandler.toLines(new Metadata(input.files.stream().map {
                 var fn = it.name.split("-")
-                return new ContainedJarMetadata(new ContainedJarIdentifier(getProject().group.toString(), fn[0]), new ContainedVersion(VersionRange.createFromVersionSpec("[" + project.version + ",)"), new DefaultArtifactVersion(project.version)), "META-INF/jarjar/" + it.name, false)
+                return new ContainedJarMetadata(new ContainedJarIdentifier(getProject().group.toString(), fn[0]), new ContainedVersion(VersionRange.createFromVersionSpec("[" + project.version + ",)"), new DefaultArtifactVersion(project.version.toString())), "META-INF/jarjar/" + it.name, false)
             }.collect(Collectors.toList()))), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
         } catch(Exception e) {
             throw new RuntimeException(e)
@@ -129,7 +139,7 @@ abstract class JijFile extends DefaultTask {
 
 class ManifestMergeTransformer implements com.github.jengelman.gradle.plugins.shadow.transformers.Transformer {
 
-    private java.util.jar.Manifest manifest;
+    private java.util.jar.Manifest manifest = new java.util.jar.Manifest()
 
     @Override
     boolean canTransformResource(FileTreeElement element) {
@@ -139,15 +149,17 @@ class ManifestMergeTransformer implements com.github.jengelman.gradle.plugins.sh
     @Override
     void transform(TransformerContext context) {
         try (InputStream is = context.is) {
-            if (manifest == null) {
-                manifest = new java.util.jar.Manifest(is)
-            } else {
-                java.util.jar.Manifest toMerge = new java.util.jar.Manifest(is)
-                for (Map.Entry<String, java.util.jar.Attributes> entry : toMerge.getEntries().entrySet()) {
-                    manifest.getEntries().put(entry.getKey(), entry.getValue())
+            java.util.jar.Manifest toMerge = new java.util.jar.Manifest(is)
+            for (Map.Entry<String, java.util.jar.Attributes> entry : manifest.getEntries().entrySet()) {
+                var other = toMerge.getEntries().get(entry.getKey())
+                var puts = entry.getValue()
+                if (other != null) {
+                    puts = other.putAll(puts)
                 }
-                manifest.mainAttributes.putAll(toMerge.mainAttributes)
+                manifest.getEntries().put(entry.getKey(), puts)
             }
+            toMerge.mainAttributes.putAll(manifest.mainAttributes)
+            manifest = toMerge
         }
     }
 

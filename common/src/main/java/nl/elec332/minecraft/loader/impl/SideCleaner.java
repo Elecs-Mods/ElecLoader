@@ -1,9 +1,11 @@
 package nl.elec332.minecraft.loader.impl;
 
 import com.google.common.collect.Streams;
+import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.distmarker.OnlyIn;
 import nl.elec332.minecraft.loader.api.distmarker.OnlyIns;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
@@ -13,6 +15,8 @@ import org.objectweb.asm.tree.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -22,7 +26,13 @@ import java.util.stream.Collectors;
  */
 public final class SideCleaner implements IClassTransformer {
 
-    public SideCleaner(Logger logger, String dist, Set<String> targets) {
+    public static void register(Consumer<IClassTransformer> registry, Function<Type, Set<IAnnotationData>> dataHandler) {
+        Set<String> sides = new HashSet<>();
+        dataHandler.apply(Type.getType(OnlyIn.class)).forEach(ad -> sides.add(ad.getClassType().getInternalName()));
+        registry.accept(new SideCleaner(LogManager.getLogger("ElecLoader SideCleaner"), ElecModLoader.getDist().name(), sides));
+    }
+
+    private SideCleaner(Logger logger, String dist, Set<String> targets) {
         this.logger = logger;
         this.dist = dist;
         this.targets = Collections.unmodifiableSet(targets);

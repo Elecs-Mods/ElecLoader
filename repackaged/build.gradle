@@ -65,6 +65,7 @@ dependencies {
 
 tasks.register("makeRepackagedJar", ShadowJar) {
     configurations = [project.configurations.shadowSource]
+    exclude("META-INF/maven/")
 
     enableRelocation true
     relocationPrefix "nl.elec332.minecraft.repackaged"
@@ -109,6 +110,8 @@ rootProject.idea.project.settings {
         afterSync thisName + ":downloadSources"
     }
 }
+
+///////////////////////////////////////////////////////////////////////
 
 abstract class DownloadGithub extends Copy {
 

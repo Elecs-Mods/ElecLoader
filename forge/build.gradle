@@ -48,7 +48,7 @@ jar {
 tasks.register("modImplJar", Jar) {
     archiveBaseName = "ElecLoaderMod"
     from sourceSets.modImpl.output
-    manifest.attributes(["FMLModType": "MOD", "MixinConfigs": "elecloader.FORGE.mixins.json"])
+    manifest.attributes(["FMLModType": "MOD", "MixinConfigs": "elecloader2.FORGE.mixins.json"])
 }
 
 configurations {

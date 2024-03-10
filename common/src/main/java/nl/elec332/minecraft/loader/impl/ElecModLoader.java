@@ -26,6 +26,8 @@ public final class ElecModLoader {
     static IAnnotationDataHandler dataHandler;
     private static ElecModLoader modLoader;
     private static boolean ranInit = false;
+    private static boolean checked = false;
+    private static boolean crashed = false;
 
     public static void initSideCleaner(Consumer<Function<Type, Set<IAnnotationData>>> initializer) {
         if (ranInit || dataHandler != null) {
@@ -71,26 +73,33 @@ public final class ElecModLoader {
 
     public static void mixinFailed() {
         dataHandler = null;
+        modLoader = null;
+        crashed = true;
     }
 
     @NotNull
     public static ElecModLoader getModLoader() {
         if (modLoader == null) {
-            if (ranInit) {
+            if (!ranInit) {
                 throw new UnsupportedOperationException();
             }
-            throw new IllegalStateException("Mixin setup failed!");
+            checkEnvironment();
+            throw new RuntimeException("wut?");
         }
         return modLoader;
     }
 
     public static void checkEnvironment() {
-        if (!ranInit || modLoader == null || (dataHandler == null && !modLoader.hasLoaded())) {
+        if (checked) {
+            return;
+        }
+        if (crashed || !ranInit || modLoader == null || (dataHandler == null && !modLoader.hasLoaded())) {
             throw new IllegalStateException("Mixin setup failed!");
         }
         if (!SidedTest.testSide(DeferredModLoader.INSTANCE.getDist())) {
             throw new RuntimeException("SideCleaner isn't active!");
         }
+        checked = true;
 
         modLoader.logger.debug("Environment check succeeded");
     }
@@ -191,11 +200,13 @@ public final class ElecModLoader {
     }
 
     public void finalizeLoading() {
+        checkEnvironment();
         DeferredModLoader.INSTANCE.postInit(false);
         dataHandler = null;
         checkMods();
         AnnotationDataHandler.INSTANCE.preProcess();
-        logger.info("Finalized modlist");
+        int s = containers.size();
+        logger.info("Finished modlist, found " + s + " mod" + (s == 1 ? "" : "s"));
         AnnotationDataHandler.INSTANCE.process(ModLoadingStage.PRE_CONSTRUCT);
     }
 

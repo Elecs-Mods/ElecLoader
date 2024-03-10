@@ -1,5 +1,3 @@
-println "ProjectNF: " + name
-
 sourceSets {
 
     modImpl {
