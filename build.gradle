@@ -20,7 +20,6 @@ tasks.register("modImplJar", ShadowJar) {
     archiveBaseName = "ElecLoaderMod"
 
     mergeServiceFiles()
-    transform(ManifestMergeTransformer)
     manifest {
         attributes(["Implementation-Title": "modImpl"])
     }
@@ -41,10 +40,6 @@ tasks.register("shadowWorkAround", Jar) {
 
 jar {
     mergeServiceFiles()
-//    transform(ManifestMergeTransformer)
-    manifest { //TODO: ManifestMerger produces a perfectly valid (byte-for-byte identical) MF file, but somehow Forge shits itself on it
-        attributes(["FMLModType": "LANGPROVIDER", "Implementation-Version": version])
-    }
     manifest {
         attributes(["Implementation-Title": "all"])
     }
@@ -60,9 +55,11 @@ subprojects {
         afterEvaluate {
             rootProject.jar {
                 from jar.outputs
+                mergeManifest(manifest, jar.manifest)
             }
             if (project.tasks.findByName("modImplJar") != null) {
                 rootProject.tasks.modImplJar.from(project.tasks.modImplJar.outputs)
+                mergeManifest(rootProject.tasks.modImplJar.manifest, project.tasks.modImplJar.manifest)
             }
             if (!project.hasModLoader) { //Common project
                 rootProject.publishing.publications.modPublication {
@@ -95,18 +92,13 @@ publishing {
 
 ///////////////////////////////////////////////////////////////////////
 
-import com.github.jengelman.gradle.plugins.shadow.transformers.TransformerContext
 import net.neoforged.jarjar.metadata.*
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.apache.maven.artifact.versioning.VersionRange
-import org.apache.tools.zip.ZipEntry
-import org.apache.tools.zip.ZipOutputStream
 
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
 import java.util.stream.Collectors
-
-import static java.util.jar.JarFile.MANIFEST_NAME
 
 abstract class JijFile extends DefaultTask {
 
@@ -137,47 +129,13 @@ abstract class JijFile extends DefaultTask {
 
 }
 
-class ManifestMergeTransformer implements com.github.jengelman.gradle.plugins.shadow.transformers.Transformer {
-
-    private java.util.jar.Manifest manifest = new java.util.jar.Manifest()
-
-    @Override
-    boolean canTransformResource(FileTreeElement element) {
-        MANIFEST_NAME.equalsIgnoreCase(element.relativePath.pathString)
-    }
-
-    @Override
-    void transform(TransformerContext context) {
-        try (InputStream is = context.is) {
-            java.util.jar.Manifest toMerge = new java.util.jar.Manifest(is)
-            for (Map.Entry<String, java.util.jar.Attributes> entry : manifest.getEntries().entrySet()) {
-                var other = toMerge.getEntries().get(entry.getKey())
-                var puts = entry.getValue()
-                if (other != null) {
-                    puts = other.putAll(puts)
-                }
-                manifest.getEntries().put(entry.getKey(), puts)
+static void mergeManifest(Manifest main, Manifest child) {
+    main.from(child) {
+        eachEntry {
+            //Ensures original properties take precedence instead of new values
+            if (it.getBaseValue() != null) {
+                setValue(getBaseValue())
             }
-            toMerge.mainAttributes.putAll(manifest.mainAttributes)
-            manifest = toMerge
         }
     }
-
-    @Override
-    boolean hasTransformedResource() {
-        return true
-    }
-
-    @Override
-    void modifyOutputStream(ZipOutputStream os, boolean preserveFileTimestamps) {
-        ZipEntry entry = new ZipEntry(MANIFEST_NAME)
-        entry.time = TransformerContext.getEntryTimestamp(preserveFileTimestamps, entry.time)
-        os.putNextEntry(entry)
-        if (manifest != null) {
-            ByteArrayOutputStream manifestContents = new ByteArrayOutputStream()
-            manifest.write(manifestContents)
-            os.write(manifestContents.toByteArray())
-        }
-    }
-
 }
