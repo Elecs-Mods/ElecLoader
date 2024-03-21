@@ -129,7 +129,7 @@ abstract class DownloadGithub extends Copy {
 //        }
 
         eachFile {
-            var fn = it.getPath().split("src/main/java/")
+            String[] fn = it.getPath().split("src/main/java/")
             assert fn.length == 2
             it.setPath(fn[1])
         }
@@ -164,7 +164,7 @@ abstract class DownloadGithub extends Copy {
 
     void fromRepo(String org, String repo, String version) {
         if (cfg != null) {
-            throw new RuntimeException();
+            throw new RuntimeException()
         }
         if (!sourceName.present) {
             sourceName.set(repo)

@@ -1,14 +1,6 @@
-buildscript {
-    configurations.all {
-        resolutionStrategy {
-            force "com.google.code.gson:gson:2.10.1" //Fix bad fabric dependency management
-        }
-    }
-}
-
 plugins {
-    id "org.gradle.toolchains.foojay-resolver-convention" version "0.7.0"
-    id "nl.elec332.gradle.minecraft.moddev" version "1.0.A2"
+    id "org.gradle.toolchains.foojay-resolver-convention" version "0.8.0"
+    id "nl.elec332.gradle.minecraft.moddev" version "1.0.5-Beta"
 }
 
 include("repackaged")

@@ -40,7 +40,6 @@ mkdir("build/resources/modRun")
 mkdir("build/classes/java/modRun")
 
 tasks.modRunClasses.dependsOn(rootProject.tasks.jar)
-tasks.jar.finalizedBy(tasks.remapJar)
 
 dependencies {
     compileOnly(project(":repackaged"))

@@ -54,7 +54,7 @@ subprojects {
     if (project.modProject) {
         afterEvaluate {
             rootProject.jar {
-                from jar.outputs
+                from remappedJar.outputs
                 mergeManifest(manifest, jar.manifest)
             }
             if (project.tasks.findByName("modImplJar") != null) {

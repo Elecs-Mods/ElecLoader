@@ -32,7 +32,7 @@ public final class FabricLikeMixinPlugin extends AbstractDynamicMixinPlugin {
 
     @Override
     protected RuntimeException onLoadFailed(Exception source) {
-        ElecModLoader.mixinFailed();
+        ElecModLoader.mixinFailed(source);
         return super.onLoadFailed(source);
     }
 

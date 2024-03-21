@@ -14,9 +14,6 @@ sourceSets {
 }
 
 modloader {
-    mixin {
-        plugin = "nl.elec332.minecraft.loader.impl.fmod.ForgeLikeMixinPlugin"
-    }
     runtimeSource = sourceSets.modRun
     importMetadata findProject(":forge")
 }
@@ -38,7 +35,7 @@ jar {
 tasks.register("modImplJar", Jar) {
     archiveBaseName = "ElecLoaderMod"
     from sourceSets.modImpl.output
-    manifest.attributes(["FMLModType": "MOD"])
+    manifest.attributes(["FMLModType": "MOD", "MixinConnector": "nl.elec332.minecraft.loader.impl.fmod.ForgeLikeMixinConnector"])
 }
 
 configurations {

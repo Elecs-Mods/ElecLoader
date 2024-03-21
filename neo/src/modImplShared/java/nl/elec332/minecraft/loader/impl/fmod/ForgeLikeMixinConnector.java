@@ -3,33 +3,37 @@ package nl.elec332.minecraft.loader.impl.fmod;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
+import nl.elec332.minecraft.loader.impl.MappingTransformer;
 import nl.elec332.minecraft.loader.impl.SideCleaner;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
-import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
-import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
+import org.spongepowered.asm.mixin.connect.IMixinConnector;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
  * Created by Elec332 on 11-02-2024
  */
-public class ForgeLikeMixinPlugin implements IMixinConfigPlugin {
+public class ForgeLikeMixinConnector implements IMixinConnector {
 
     private void addTransformers(Consumer<IClassTransformer> registry) {
         ElecModLoader.initSideCleaner(dataHandler -> {
             SideCleaner.register(registry, dataHandler);
+            MappingTransformer.register(registry, dataHandler);
         });
     }
 
     @Override
-    public void onLoad(String mixinPackage) {
+    public void connect() {
         try {
             var plugins = getPlugins();
-            addTransformers(c -> plugins.put(c.getName(), new ILaunchPluginService() {
+            Map<String, ILaunchPluginService> extraPlugins = new HashMap<>();
+            addTransformers(c -> extraPlugins.put(c.getName(), new ILaunchPluginService() {
 
                 @Override
                 public String name() {
@@ -50,11 +54,11 @@ public class ForgeLikeMixinPlugin implements IMixinConfigPlugin {
                 }
 
             }));
+            plugins.putAll(extraPlugins);
         } catch (Exception e) {
-            ElecModLoader.mixinFailed();
+            ElecModLoader.mixinFailed(e);
             throw new RuntimeException(e);
         }
-
     }
 
     @SuppressWarnings("unchecked")
@@ -64,34 +68,10 @@ public class ForgeLikeMixinPlugin implements IMixinConfigPlugin {
         Object o = f.get(Launcher.INSTANCE);
         f = o.getClass().getDeclaredField("plugins");
         f.setAccessible(true);
-        return ((Map<String, ILaunchPluginService>) f.get(o));
-    }
-
-    @Override
-    public String getRefMapperConfig() {
-        return null;
-    }
-
-    @Override
-    public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        return true;
-    }
-
-    @Override
-    public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {
-    }
-
-    @Override
-    public List<String> getMixins() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public void preApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-    }
-
-    @Override
-    public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
+        Map<String, ILaunchPluginService> ret = new HashMap<>();
+        ret.putAll(((Map<String, ILaunchPluginService>) f.get(o)));
+        f.set(o, ret);
+        return ret;
     }
 
 }

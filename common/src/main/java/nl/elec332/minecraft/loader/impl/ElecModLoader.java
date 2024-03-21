@@ -27,7 +27,7 @@ public final class ElecModLoader {
     private static ElecModLoader modLoader;
     private static boolean ranInit = false;
     private static boolean checked = false;
-    private static boolean crashed = false;
+    private static Throwable crashed = null;
 
     public static void initSideCleaner(Consumer<Function<Type, Set<IAnnotationData>>> initializer) {
         if (ranInit || dataHandler != null) {
@@ -39,8 +39,8 @@ public final class ElecModLoader {
             modLoader = new ElecModLoader(dataHandler::getAnnotationList);
             initializer.accept(dataHandler::getAnnotationList);
         } catch (Exception e) {
-            dataHandler = null;
-            throw new RuntimeException(e);
+            mixinFailed(e);
+            throw e;
         }
     }
 
@@ -71,10 +71,13 @@ public final class ElecModLoader {
         return DeferredModLoader.INSTANCE.getDist();
     }
 
-    public static void mixinFailed() {
+    public static void mixinFailed(Throwable e) {
+        if (crashed != null) {
+            return; //We already crashed before...
+        }
         dataHandler = null;
         modLoader = null;
-        crashed = true;
+        crashed = Objects.requireNonNull(e);
     }
 
     @NotNull
@@ -93,7 +96,10 @@ public final class ElecModLoader {
         if (checked) {
             return;
         }
-        if (crashed || !ranInit || modLoader == null || (dataHandler == null && !modLoader.hasLoaded())) {
+        if (crashed != null || !ranInit || modLoader == null || (dataHandler == null && !modLoader.hasLoaded())) {
+            if (crashed != null) {
+                throw new RuntimeException(crashed);
+            }
             throw new IllegalStateException("Mixin setup failed!");
         }
         if (!SidedTest.testSide(DeferredModLoader.INSTANCE.getDist())) {

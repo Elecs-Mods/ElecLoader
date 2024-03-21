@@ -150,11 +150,6 @@ final class NeoModLoader extends AbstractModLoader<ModInfo> {
     }
 
     @Override
-    public MappingType getMappingTarget() {
-        return MappingType.NAMED;
-    }
-
-    @Override
     public void enqueueDeferredWork(ModLoadingStage stage, IModContainer modContainer, Runnable runnable) {
         if (stage == ModLoadingStage.PRE_CONSTRUCT) {
             throw new UnsupportedOperationException();
