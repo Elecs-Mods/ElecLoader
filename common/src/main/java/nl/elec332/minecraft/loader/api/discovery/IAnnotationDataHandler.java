@@ -90,7 +90,7 @@ public interface IAnnotationDataHandler {
     Map<IModContainer, Set<IAnnotationData>> getModdedAnnotationMap(Type annotationType);
 
     /**
-     * Attempts to find the {@link IModContainer} that owns the element & annotation provided.
+     * Attempts to find the {@link IModContainer} that owns the element and annotation provided.
      *
      * @param annotationData The annotation data to be checked
      * @return The owner of the provided data
@@ -98,7 +98,7 @@ public interface IAnnotationDataHandler {
     IModContainer findOwner(IAnnotationData annotationData);
 
     /**
-     * Attempts to find the name of the mod that owns the element & annotation provided.
+     * Attempts to find the name of the mod that owns the element and annotation provided.
      *
      * @param annotationData The annotation data to be checked
      * @return The name of the owner of the provided data

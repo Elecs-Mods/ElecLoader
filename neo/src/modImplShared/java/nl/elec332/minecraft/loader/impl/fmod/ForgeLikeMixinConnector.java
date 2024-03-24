@@ -3,7 +3,6 @@ package nl.elec332.minecraft.loader.impl.fmod;
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
-import nl.elec332.minecraft.loader.impl.MappingTransformer;
 import nl.elec332.minecraft.loader.impl.SideCleaner;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
 import org.objectweb.asm.Type;
