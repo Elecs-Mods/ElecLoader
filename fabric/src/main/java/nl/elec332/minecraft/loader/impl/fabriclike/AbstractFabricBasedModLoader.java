@@ -13,7 +13,6 @@ import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.impl.LoaderConstants;
-import org.objectweb.asm.Type;
 
 import java.net.URLClassLoader;
 import java.util.*;
@@ -93,7 +92,7 @@ public abstract class AbstractFabricBasedModLoader<T> extends AbstractModLoader<
         if (super.hasWrongSideOnly(clazz, annotationData)) {
             return true;
         }
-        Set<IAnnotationData> ad = annotationData.getAnnotationsForClass(clazz).apply(Type.getType(Environment.class));
+        Set<IAnnotationData> ad = annotationData.getAnnotationsForClass(clazz).apply(org.objectweb.asm.Type.getType(Environment.class));
         for (var a : ad) {
             if (!a.isClass()) {
                 continue;

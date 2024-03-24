@@ -24,7 +24,6 @@ public class ForgeLikeMixinConnector implements IMixinConnector {
     private void addTransformers(Consumer<IClassTransformer> registry) {
         ElecModLoader.initSideCleaner(dataHandler -> {
             SideCleaner.register(registry, dataHandler);
-            MappingTransformer.register(registry, dataHandler);
         });
     }
 

@@ -10,7 +10,7 @@ import nl.elec332.minecraft.loader.mod.event.mapping.IModEventMapper;
 /**
  * Created by Elec332 on 12-02-2024
  */
-@ModService(IModLoader.LoaderType.FORGE)
+@ModService(IModLoader.Type.FORGE)
 public class ForgeEvents implements IModEventMapper {
 
     @Override

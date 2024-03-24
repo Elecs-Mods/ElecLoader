@@ -13,7 +13,6 @@ import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Type;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -174,7 +173,7 @@ public abstract class AbstractModLoader<T> implements IModLoader {
 
     @Override
     public boolean hasWrongSideOnly(String clazz, IAnnotationDataHandler annotationData) {
-        Set<IAnnotationData> ad = annotationData.getAnnotationsForClass(clazz).apply(Type.getType(OnlyIn.class));
+        Set<IAnnotationData> ad = annotationData.getAnnotationsForClass(clazz).apply(org.objectweb.asm.Type.getType(OnlyIn.class));
         for (var a : ad) {
             if (!a.isClass()) {
                 continue;

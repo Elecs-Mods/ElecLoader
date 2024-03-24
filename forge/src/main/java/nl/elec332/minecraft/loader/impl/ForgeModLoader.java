@@ -11,11 +11,10 @@ import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.*;
+import nl.elec332.minecraft.loader.api.version.IVersion;
+import nl.elec332.minecraft.loader.api.version.IVersionFactory;
 import nl.elec332.minecraft.loader.impl.forgelang.ForgeModContainer;
-import nl.elec332.minecraft.repackaged.org.apache.maven.artifact.versioning.ArtifactVersion;
-import nl.elec332.minecraft.repackaged.org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jetbrains.annotations.Nullable;
-import org.objectweb.asm.Type;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -78,7 +77,7 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
 
     @Override
     protected IModMetaData getModMeta(final ModInfo container, final IModFile modFile) {
-        ArtifactVersion version = new DefaultArtifactVersion(container.getVersion().toString());
+        final IVersion version = IVersionFactory.INSTANCE.createVersion(container.getVersion().toString());
         return new IModMetaData() {
 
             @Override
@@ -97,7 +96,7 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
             }
 
             @Override
-            public ArtifactVersion getVersion() {
+            public IVersion getVersion() {
                 return version;
             }
 
@@ -144,8 +143,13 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
     }
 
     @Override
-    public LoaderType getModLoaderType() {
-        return LoaderType.FORGE;
+    public Type getModLoaderType() {
+        return Type.FORGE;
+    }
+
+    @Override
+    public MappingType getMappingTarget() {
+        return MappingType.FORGE_SRG;
     }
 
     @Override
@@ -162,7 +166,7 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
         if (super.hasWrongSideOnly(clazz, annotationData)) {
             return true;
         }
-        Set<IAnnotationData> ad = annotationData.getAnnotationsForClass(clazz).apply(Type.getType(OnlyIn.class));
+        Set<IAnnotationData> ad = annotationData.getAnnotationsForClass(clazz).apply(org.objectweb.asm.Type.getType(OnlyIn.class));
         for (var a : ad) {
             if (!a.isClass()) {
                 continue;

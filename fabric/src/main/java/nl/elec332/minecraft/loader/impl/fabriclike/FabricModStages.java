@@ -38,7 +38,7 @@ public final class FabricModStages {
         ElecModLoader.getModLoader().postModEvent(SendModCommsEvent::new);
         processQueue(ModLoadingStage.MODCOMMS_SEND);
         ElecModLoader.getModLoader().postModEvent(PostInitEvent::new);
-        processQueue(ModLoadingStage.MODCOMMS_RECEIVE);
+        processQueue(ModLoadingStage.LATE_SETUP);
         ElecModLoader.getModLoader().postModEvent(LoadCompleteEvent::new);
         processQueue(ModLoadingStage.COMPLETE);
     }

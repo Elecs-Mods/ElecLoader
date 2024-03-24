@@ -110,8 +110,13 @@ public final class DeferredModLoader implements IModLoader {
     }
 
     @Override
-    public LoaderType getModLoaderType() {
+    public Type getModLoaderType() {
         return realModLoader.getModLoaderType();
+    }
+
+    @Override
+    public MappingType getMappingTarget() {
+        return Objects.requireNonNull(realModLoader.getMappingTarget());
     }
 
     @Nullable

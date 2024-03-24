@@ -6,9 +6,10 @@ import net.fabricmc.loader.api.metadata.ModMetadata;
 import nl.elec332.minecraft.loader.abstraction.PathModFile;
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
+import nl.elec332.minecraft.loader.api.modloader.MappingType;
+import nl.elec332.minecraft.loader.api.version.IVersion;
+import nl.elec332.minecraft.loader.api.version.IVersionFactory;
 import nl.elec332.minecraft.loader.impl.fabriclike.AbstractFabricBasedModLoader;
-import nl.elec332.minecraft.repackaged.org.apache.maven.artifact.versioning.ArtifactVersion;
-import nl.elec332.minecraft.repackaged.org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 /**
  * Created by Elec332 on 12-02-2024
@@ -22,6 +23,7 @@ final class FabricModLoader extends AbstractFabricBasedModLoader<ModContainer> {
     @Override
     protected IModMetaData getModMeta(ModContainer container, IModFile file) {
         final ModMetadata metadata = container.getMetadata();
+        final IVersion version = IVersionFactory.INSTANCE.createVersion(metadata.getVersion().getFriendlyString());
         return new IModMetaData() {
 
             @Override
@@ -40,8 +42,8 @@ final class FabricModLoader extends AbstractFabricBasedModLoader<ModContainer> {
             }
 
             @Override
-            public ArtifactVersion getVersion() {
-                return new DefaultArtifactVersion(metadata.getVersion().getFriendlyString());
+            public IVersion getVersion() {
+                return version;
             }
 
             @Override
@@ -68,8 +70,13 @@ final class FabricModLoader extends AbstractFabricBasedModLoader<ModContainer> {
     }
 
     @Override
-    public LoaderType getModLoaderType() {
-        return LoaderType.FABRIC;
+    public Type getModLoaderType() {
+        return Type.FABRIC;
+    }
+
+    @Override
+    public MappingType getMappingTarget() {
+        return MappingType.FABRIC_INTERMEDIARY;
     }
 
     static {

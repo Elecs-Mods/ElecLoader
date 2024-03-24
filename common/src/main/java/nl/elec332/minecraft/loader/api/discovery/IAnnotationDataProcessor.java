@@ -16,7 +16,7 @@ public interface IAnnotationDataProcessor {
      * this processor gets run at multiple times in the mod lifecycle
      *
      * @param annotationData The ASMDataTable
-     * @param state          The current {@link ModLoadingStage}
+     * @param state The current {@link ModLoadingStage}
      */
     void processASMData(IAnnotationDataHandler annotationData, ModLoadingStage state);
 

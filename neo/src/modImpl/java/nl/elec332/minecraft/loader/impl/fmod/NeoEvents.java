@@ -10,7 +10,7 @@ import nl.elec332.minecraft.loader.mod.event.mapping.IModEventMapper;
 /**
  * Created by Elec332 on 28-02-2024
  */
-@ModService(IModLoader.LoaderType.NEOFORGE)
+@ModService(IModLoader.Type.NEOFORGE)
 public class NeoEvents implements IModEventMapper {
 
     @Override

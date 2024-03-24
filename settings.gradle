@@ -1,6 +1,6 @@
 plugins {
     id "org.gradle.toolchains.foojay-resolver-convention" version "0.8.0"
-    id "nl.elec332.gradle.minecraft.moddev" version "1.0.5-Beta"
+    id "nl.elec332.gradle.minecraft.moddev" version "1.0.6-Beta"
 }
 
 include("repackaged")
@@ -10,4 +10,6 @@ moddev {
     enableNeoForge()
     enableFabric()
 //    enableQuilt() //Besides it tracking users, you cant even disable a fabric mod from being loaded by config. Disabled until they get their shit together
+
+    useBuildNumber = true
 }

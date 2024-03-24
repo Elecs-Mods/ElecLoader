@@ -17,21 +17,12 @@ import java.lang.annotation.Target;
 public @interface AnnotationDataProcessor {
 
     /**
-     * Valid ModLoadingStages:
-     * ModLoadingStage.CONSTRUCTING
-     * ModLoadingStage.PREINITIALIZATION
-     * ModLoadingStage.INITIALIZATION
-     * ModLoadingStage.POSTINITIALIZATION
-     * ModLoadingStage.AVAILABLE
-     *
-     * @return The (array of) ModLoadingStage(s) in which to load this.
+     * @return The (array of) ModLoadingStage(s) in which to load this {@link IAnnotationDataProcessor}.
      */
     ModLoadingStage[] value();
 
     /**
-     * The importance of this {@link IAnnotationDataProcessor}, higher = earlier processing
-     *
-     * @return Importance of this {@link IAnnotationDataProcessor}
+     * @return Importance of this {@link IAnnotationDataProcessor}, higher = earlier processing
      */
     int importance() default -1;
 

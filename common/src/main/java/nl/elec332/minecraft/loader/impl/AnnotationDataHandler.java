@@ -109,12 +109,12 @@ enum AnnotationDataHandler {
             }
 
             @Override
-            public IModContainer deepSearchOwner(IAnnotationData annotationData) {
+            public IModContainer findOwner(IAnnotationData annotationData) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public String deepSearchOwnerName(IAnnotationData annotationData) {
+            public String findOwnerName(IAnnotationData annotationData) {
                 throw new UnsupportedOperationException();
             }
 
@@ -211,17 +211,19 @@ enum AnnotationDataHandler {
             }
 
             @Override
-            public IModContainer deepSearchOwner(IAnnotationData annotationData) {
+            public IModContainer findOwner(IAnnotationData annotationData) {
                 return modSearcher.apply(annotationData);
             }
 
             @Override
-            public String deepSearchOwnerName(IAnnotationData annotationData) {
+            public String findOwnerName(IAnnotationData annotationData) {
                 IModFile owner = annotationData.getFile();
                 if (owner.getMods().size() == 1) {
+                    //Small speed optimization, as normally there also has to be a search from id -> container.
+                    //Since the vast majority of files contain only one mod this will almost always be faster.
                     return owner.getMods().get(0).getModId();
                 }
-                return deepSearchOwner(annotationData).getModId();
+                return findOwner(annotationData).getModId();
             }
 
         };
@@ -519,8 +521,7 @@ enum AnnotationDataHandler {
 
         @Override
         public String toString() {
-            return ""
-                    + " Annotation:" + getAnnotationName()
+            return " Annotation:" + getAnnotationName()
                     + " Class:" + getClassName()
                     + " Field name:" + (isField() ? getFieldName() : "-")
                     + " Method name:" + (isMethod() ? getMethodName() : "-")

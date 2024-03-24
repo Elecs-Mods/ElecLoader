@@ -9,7 +9,7 @@ import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 public class PostInitEvent extends ModLoaderEvent {
 
     public PostInitEvent(IModContainer modContainer) {
-        super(modContainer, ModLoadingStage.MODCOMMS_RECEIVE);
+        super(modContainer, ModLoadingStage.LATE_SETUP);
     }
 
 }

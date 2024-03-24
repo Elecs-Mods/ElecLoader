@@ -2,8 +2,10 @@ package nl.elec332.minecraft.loader.impl;
 
 import nl.elec332.minecraft.loader.abstraction.PathModFile;
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
-import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
+import nl.elec332.minecraft.loader.api.modloader.MappingType;
+import nl.elec332.minecraft.loader.api.version.IVersion;
+import nl.elec332.minecraft.loader.api.version.IVersionFactory;
 import nl.elec332.minecraft.loader.impl.fabriclike.AbstractFabricBasedModLoader;
 import nl.elec332.minecraft.repackaged.org.apache.maven.artifact.versioning.ArtifactVersion;
 import nl.elec332.minecraft.repackaged.org.apache.maven.artifact.versioning.DefaultArtifactVersion;
@@ -28,6 +30,7 @@ final class QuiltModLoader extends AbstractFabricBasedModLoader<ModContainer> {
     @Override
     protected IModMetaData getModMeta(ModContainer container, IModFile file) {
         final ModMetadata metadata = container.metadata();
+        final IVersion version = IVersionFactory.INSTANCE.createVersion(metadata.version().raw());
         return new IModMetaData() {
 
             @Override
@@ -46,8 +49,8 @@ final class QuiltModLoader extends AbstractFabricBasedModLoader<ModContainer> {
             }
 
             @Override
-            public ArtifactVersion getVersion() {
-                return new DefaultArtifactVersion(metadata.version().raw());
+            public IVersion getVersion() {
+                return version;
             }
 
             @Override
@@ -74,8 +77,13 @@ final class QuiltModLoader extends AbstractFabricBasedModLoader<ModContainer> {
     }
 
     @Override
-    public IModLoader.LoaderType getModLoaderType() {
-        return IModLoader.LoaderType.QUILT;
+    public Type getModLoaderType() {
+        return Type.QUILT;
+    }
+
+    @Override
+    public MappingType getMappingTarget() {
+        return MappingType.FABRIC_INTERMEDIARY;
     }
 
 }
