@@ -17,6 +17,7 @@ version = mod_version
 tasks.replace("jar", ShadowJar)
 
 tasks.register("modImplJar", ShadowJar) {
+    destinationDirectory = project.layout.buildDirectory.dir("subLibs")
     archiveBaseName = "ElecLoaderMod"
 
     mergeServiceFiles()
@@ -31,6 +32,7 @@ tasks.register("makeJiJMeta", JijFile) {
 }
 
 tasks.register("shadowWorkAround", Jar) {
+    destinationDirectory = project.layout.buildDirectory.dir("subLibs")
     archiveBaseName = "ShadowWorkaround"
     into("META-INF/jarjar") {
         from(tasks.makeJiJMeta.outputs)
@@ -65,6 +67,7 @@ subprojects {
                 rootProject.publishing.publications.modPublication {
                     artifact sourcesJar
                     artifact javadocJar
+                    artifact jar
                 }
             }
         }
