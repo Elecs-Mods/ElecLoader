@@ -4,12 +4,6 @@ sourceSets {
         compileClasspath += main.compileClasspath
     }
 
-    modRun {
-        java.setSrcDirs([])
-        resources.setSrcDirs([])
-        runtimeClasspath += rootProject.tasks.jar.outputs.files
-    }
-
 }
 
 modloader {
@@ -17,9 +11,10 @@ modloader {
         generateOnly = true
         plugin = "nl.elec332.minecraft.loader.impl.fmod.ForgeMixinPlugin"
     }
+
     addMixinsToManifest = false
-    runtimeSource = sourceSets.modRun
     importMetadata findProject(":neo")
+    mainModSource = sourceSets.modImpl
 }
 
 compileModImplJava {
@@ -28,33 +23,9 @@ compileModImplJava {
     }
 }
 
-generateModInfo.source sourceSets.modImpl
-generateMixinJson.source sourceSets.modImpl
-
-compileModRunJava.enabled = false
-processModRunResources.enabled = false
-mkdir(compileModRunJava.destinationDirectory)
-mkdir(processModRunResources.destinationDir)
-
-jar {
-    manifest {
+[jar, devJar].each {j ->
+    j.manifest {
         attributes(["FMLModType": "LANGPROVIDER"])
     }
 }
 
-tasks.register("modImplJar", Jar) {
-    archiveBaseName = "ElecLoaderMod"
-    from sourceSets.modImpl.output
-    manifest.attributes(["FMLModType": "MOD", "MixinConfigs": "elecloader.forge.mixins.json", "MixinConnector": "nl.elec332.minecraft.loader.impl.fmod.ForgeLikeMixinConnector"])
-}
-
-configurations {
-    modRunImplementation.extendsFrom implementation
-}
-
-tasks.modRunClasses.dependsOn(rootProject.tasks.jar)
-
-dependencies {
-    compileOnly(project(":repackaged"))
-    compileOnly(project(":common"))
-}

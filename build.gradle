@@ -1,4 +1,5 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import net.neoforged.jarjar.metadata.*
 
 buildscript {
     dependencies {
@@ -40,13 +41,18 @@ tasks.register("shadowWorkAround", Jar) {
     }
 }
 
-jar {
-    mergeServiceFiles()
-    manifest {
+tasks.register("devJar", ShadowJar) {
+    archiveClassifier = "dev"
+}
+tasks.assemble.dependsOn devJar
+
+[jar, devJar].each { j ->
+    j.mergeServiceFiles()
+    j.manifest {
         attributes(["Implementation-Title": "all"])
     }
 
-    from(files(tasks.shadowWorkAround.outputs))
+    j.from(files(tasks.shadowWorkAround.outputs))
 }
 
 tasks.withType(GenerateModuleMetadata.class).configureEach(meta -> meta.setEnabled(false))
@@ -58,6 +64,10 @@ subprojects {
             rootProject.jar {
                 from remappedJar.outputs
                 mergeManifest(manifest, jar.manifest)
+            }
+            rootProject.devJar {
+                from devJar.outputs
+                mergeManifest(manifest, devJar.manifest)
             }
             if (project.tasks.findByName("modImplJar") != null) {
                 rootProject.tasks.modImplJar.from(project.tasks.modImplJar.outputs)
@@ -75,9 +85,35 @@ subprojects {
     if (!project.hasModLoader) {
         return
     }
+
+    sourceSets {
+
+        modRun {
+            java.setSrcDirs([])
+            resources.setSrcDirs([])
+            runtimeClasspath += rootProject.tasks.devJar.outputs.files
+        }
+
+    }
+
     modloader {
         addCommonDependency = false
+        runtimeSource = sourceSets.modRun
     }
+
+    mkdir(compileModRunJava.destinationDirectory)
+    mkdir(processModRunResources.getDestinationDir())
+    tasks.modRunClasses.dependsOn(rootProject.tasks.devJar)
+
+    dependencies {
+        compileOnly(project(":repackaged"))
+        compileOnly(project(":common"))
+    }
+
+    configurations {
+        modRunRuntimeClasspath.extendsFrom runtimeClasspath
+    }
+
 }
 
 publishing {
@@ -88,14 +124,14 @@ publishing {
     }
     publications {
         create("modPublication", MavenPublication) {
-            from components.java
+            artifact jar
+            artifact devJar
         }
     }
 }
 
 ///////////////////////////////////////////////////////////////////////
 
-import net.neoforged.jarjar.metadata.*
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion
 import org.apache.maven.artifact.versioning.VersionRange
 

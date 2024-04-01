@@ -1,12 +1,3 @@
-sourceSets {
-
-    modRun {
-        runtimeClasspath += rootProject.tasks.jar.outputs.files
-        runtimeClasspath += configurations.runtimeClasspath
-    }
-
-}
-
 modloader {
 
     metadata {
@@ -28,20 +19,9 @@ modloader {
     }
 
     addApiDependency = false
-    runtimeSource = sourceSets.modRun
 
 }
 
-compileModRunJava.enabled = false
-processModRunResources.enabled = false
-mkdir("build/resources/modRun")
-mkdir("build/classes/java/modRun")
-
-tasks.modRunClasses.dependsOn(rootProject.tasks.jar)
-tasks.jar.finalizedBy(tasks.remapJar)
-
 dependencies {
-    compileOnly(project(":repackaged"))
-    compileOnly(project(":common"))
     compileOnly(project(":fabric"))
 }

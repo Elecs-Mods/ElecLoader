@@ -26,8 +26,8 @@ dependencies {
     compileOnly "org.spongepowered:mixin:0.8.5"
 }
 
-jar {
+[jar, devJar].each {j ->
     configurations.bus.resolve().each {
-        from zipTree(it)
+        j.from zipTree(it)
     }
 }
