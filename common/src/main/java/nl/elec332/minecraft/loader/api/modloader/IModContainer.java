@@ -39,6 +39,7 @@ public interface IModContainer {
     default String toInfoString() {
         return "ModContainer{" +
                 " ModID: " + getModId() +
+                " Metadata: " + getModMetadata() +
                 " File: " + getFile() +
                 " Packages: " + getOwnedPackages() +
                 " }";

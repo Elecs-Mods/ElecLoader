@@ -5,6 +5,7 @@ import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.impl.ElecModContainer;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
+import nl.elec332.minecraft.loader.impl.LoaderInitializer;
 import nl.elec332.minecraft.loader.mod.event.*;
 
 import java.util.Map;
@@ -16,8 +17,7 @@ public final class FabricModStages {
 
     public static void discover() {
         ElecModLoader.getModLoader().useDiscoveredMods((meta, type) -> new ElecModContainer(meta, type.getClassName(), Class::forName, (e, c) -> new RuntimeException("Failed to " + e.getKey() + " mod " + meta.getModId(), e.getValue())));
-        ElecModLoader.getModLoader().finalizeLoading();
-        ElecModLoader.checkModLoader();
+        LoaderInitializer.INSTANCE.finalizeLoading();
         ElecModLoader.getModLoader().postModEvent(ConstructModEvent::new);
         processQueue(ModLoadingStage.CONSTRUCT);
     }
@@ -44,22 +44,24 @@ public final class FabricModStages {
     }
 
     private static void processQueue(ModLoadingStage stage) {
-        var runnables = AbstractFabricBasedModLoader.DEFERRED_WORK_QUEUE.get(stage);
-        if (runnables == null) {
-            throw new IllegalArgumentException("Stage already processed: " + stage.getName());
-        }
-        Map.Entry<IModContainer, Runnable> entry;
-        while ((entry = runnables.poll()) != null) {
-            try {
-                entry.getValue().run();
-            } catch (Throwable e) {
-                throw new RuntimeException("Failed to do deferred work for mod: " + entry.getKey().getModId(), e);
+        synchronized (AbstractFabricBasedModLoader.DEFERRED_WORK_QUEUE) {
+            var runnables = AbstractFabricBasedModLoader.DEFERRED_WORK_QUEUE.get(stage);
+            if (runnables == null) {
+                throw new IllegalArgumentException("Stage already processed: " + stage.getName());
             }
+            Map.Entry<IModContainer, Runnable> entry;
+            while ((entry = runnables.poll()) != null) {
+                try {
+                    entry.getValue().run();
+                } catch (Throwable e) {
+                    throw new RuntimeException("Failed to do deferred work for mod: " + entry.getKey().getModId(), e);
+                }
+            }
+            if (!runnables.isEmpty()) {
+                throw new RuntimeException();
+            }
+            AbstractFabricBasedModLoader.DEFERRED_WORK_QUEUE.remove(stage);
         }
-        if (!runnables.isEmpty()) {
-            throw new RuntimeException();
-        }
-        AbstractFabricBasedModLoader.DEFERRED_WORK_QUEUE.remove(stage);
     }
 
 }

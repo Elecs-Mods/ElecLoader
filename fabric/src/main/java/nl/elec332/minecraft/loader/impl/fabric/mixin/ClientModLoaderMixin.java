@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ReloadableResourceManager.class)
 public abstract class ClientModLoaderMixin {
 
-    @Inject(at = @At("TAIL"), method = "<init>(Lnet/minecraft/server/packs/PackType;)V")
+    @Inject(at = @At("TAIL"), method = "<init>")
     private void run(CallbackInfo info) {
         FabricModStages.discover();
         ((ReloadableResourceManager) (Object) this).registerReloadListener((ResourceManagerReloadListener) resourceManager -> {

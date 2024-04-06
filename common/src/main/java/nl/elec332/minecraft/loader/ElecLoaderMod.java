@@ -3,6 +3,7 @@ package nl.elec332.minecraft.loader;
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
+import nl.elec332.minecraft.loader.impl.LoaderInitializer;
 import nl.elec332.minecraft.loader.mod.Mod;
 import nl.elec332.minecraft.loader.mod.event.*;
 import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.IEventBus;
@@ -17,7 +18,7 @@ public class ElecLoaderMod {
 
     public ElecLoaderMod(IEventBus eventBus, Dist dist) {
         LOGGER.info("ElecLoader loading for side " + dist + " for modloader " + IModLoader.INSTANCE.getModLoaderName());
-        ElecModLoader.checkModLoader();
+        LoaderInitializer.INSTANCE.checkFinalized();
         eventBus.addListener(this::onConstruct);
         eventBus.addListener(this::preInit);
         eventBus.addListener(this::clientInit);
@@ -31,31 +32,35 @@ public class ElecLoaderMod {
     public static final Logger LOGGER = LogManager.getLogger();
 
     public void onConstruct(ConstructModEvent event) {
-        ElecModLoader.processAnnotations(event.getLoadingStage());
+        processAnnotations(event);
     }
 
     public void preInit(CommonSetupEvent event) {
-        ElecModLoader.processAnnotations(event.getLoadingStage());
+        processAnnotations(event);
     }
 
     public void clientInit(ClientSetupEvent event) {
-        ElecModLoader.processAnnotations(event.getLoadingStage());
+        processAnnotations(event);
     }
 
     public void serverInit(ServerSetupEvent event) {
-        ElecModLoader.processAnnotations(event.getLoadingStage());
+        processAnnotations(event);
     }
 
     public void sendIMC(SendModCommsEvent event) {
-        ElecModLoader.processAnnotations(event.getLoadingStage());
+        processAnnotations(event);
     }
 
     public void postInit(PostInitEvent event) {
-        ElecModLoader.processAnnotations(event.getLoadingStage());
+        processAnnotations(event);
     }
 
     public void complete(LoadCompleteEvent event) {
-        ElecModLoader.processAnnotations(event.getLoadingStage());
+        processAnnotations(event);
+    }
+
+    private void processAnnotations(final ModLoaderEvent event) {
+        event.enqueueDeferredWork(() -> ElecModLoader.getModLoader().processAnnotations(event.getLoadingStage()));
     }
 
 }

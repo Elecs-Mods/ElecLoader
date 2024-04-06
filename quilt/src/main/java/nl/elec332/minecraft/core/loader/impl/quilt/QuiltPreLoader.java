@@ -1,6 +1,6 @@
 package nl.elec332.minecraft.loader.impl.quilt;
 
-import nl.elec332.minecraft.loader.impl.ElecModLoader;
+import nl.elec332.minecraft.loader.impl.LoaderInitializer;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint;
 
@@ -11,7 +11,7 @@ public class QuiltPreLoader implements PreLaunchEntrypoint {
 
     @Override
     public void onPreLaunch(ModContainer mod) {
-        ElecModLoader.checkEnvironment();
+        LoaderInitializer.INSTANCE.checkEnvironment();
     }
 
 }

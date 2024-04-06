@@ -2,7 +2,7 @@ package nl.elec332.minecraft.loader.impl.fmod;
 
 import cpw.mods.modlauncher.Launcher;
 import cpw.mods.modlauncher.serviceapi.ILaunchPluginService;
-import nl.elec332.minecraft.loader.impl.ElecModLoader;
+import nl.elec332.minecraft.loader.impl.LoaderInitializer;
 import nl.elec332.minecraft.loader.impl.SideCleaner;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
 import org.objectweb.asm.Type;
@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 public class ForgeLikeMixinConnector implements IMixinConnector {
 
     private void addTransformers(Consumer<IClassTransformer> registry) {
-        ElecModLoader.initSideCleaner(dataHandler -> {
+        LoaderInitializer.INSTANCE.startLoader(dataHandler -> {
             SideCleaner.register(registry, dataHandler);
         });
     }
@@ -54,7 +54,7 @@ public class ForgeLikeMixinConnector implements IMixinConnector {
             }));
             plugins.putAll(extraPlugins);
         } catch (Exception e) {
-            ElecModLoader.mixinFailed(e);
+            LoaderInitializer.INSTANCE.mixinFailed(e);
             throw new RuntimeException(e);
         }
     }

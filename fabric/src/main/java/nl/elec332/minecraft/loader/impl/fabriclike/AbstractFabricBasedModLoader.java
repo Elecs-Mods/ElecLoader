@@ -16,6 +16,7 @@ import nl.elec332.minecraft.loader.impl.LoaderConstants;
 
 import java.net.URLClassLoader;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -105,7 +106,7 @@ public abstract class AbstractFabricBasedModLoader<T> extends AbstractModLoader<
         return false;
     }
 
-    static final Map<ModLoadingStage, ConcurrentLinkedDeque<Map.Entry<IModContainer, Runnable>>> DEFERRED_WORK_QUEUE = new HashMap<>();
+    static final Map<ModLoadingStage, ConcurrentLinkedDeque<Map.Entry<IModContainer, Runnable>>> DEFERRED_WORK_QUEUE = new ConcurrentHashMap<>();
 
     @Override
     public void enqueueDeferredWork(ModLoadingStage stage, IModContainer modContainer, Runnable runnable) {

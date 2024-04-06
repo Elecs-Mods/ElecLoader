@@ -59,49 +59,15 @@ public final class DeferredModLoader implements IModLoader {
         }
         realModLoader = (AbstractModLoader<?>) loaded.iterator().next();
         if (realModLoader.getModMetaData(ElecLoaderMod.MODID) == null) {
-            crash();
+            LoaderInitializer.INSTANCE.loaderModNotFound();
         }
         INSTANCE = this;
     }
 
     private final AbstractModLoader<?> realModLoader;
-    private boolean init = false;
 
-    public boolean hasInitialized() {
-        return init;
-    }
-
-    synchronized void postInit(boolean force) {
-        if (force) {
-            if (!init) {
-                throw new IllegalStateException("ModLoader failed to automatically initialize!");
-            }
-            return;
-        }
-        if (init) {
-            throw new IllegalStateException("ModLoader has already initialized!");
-        }
+    void fillModContainers() {
         realModLoader.fillModContainers();
-        init = true;
-        if (ElecModLoader.getModLoader().containers.isEmpty() || !ElecModLoader.getModLoader().hasLoaded()) {
-            throw new IllegalStateException("ModLoader.postinit() is being called too early!");
-        }
-        ElecModLoader.getModLoader().containers.forEach((name, container) -> {
-            IModContainer mc = getModContainer(name);
-            if (mc == null) {
-                throw new RuntimeException("Failed to load linked mod " + name);
-            }
-            if (mc != container) {
-                throw new IllegalStateException("Container mismatch for " + name);
-            }
-        });
-        if (ElecModLoader.getModLoader().getModContainer(ElecLoaderMod.MODID) == null || DeferredModLoader.INSTANCE.getModContainer(ElecLoaderMod.MODID) == null) {
-            crash();
-        }
-    }
-
-    private void crash() {
-        throw new RuntimeException("ElecLoaderMod failed to load itself correctly!");
     }
 
     @Override
