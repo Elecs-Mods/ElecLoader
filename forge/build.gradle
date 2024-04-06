@@ -29,3 +29,8 @@ compileModImplJava {
     }
 }
 
+tasks.register("modImplJar", Jar) {
+    archiveBaseName = "ElecLoaderMod"
+    from sourceSets.modImpl.output
+    manifest.attributes(["FMLModType": "MOD", "MixinConfigs": "elecloader.forge.mixins.json", "MixinConnector": "nl.elec332.minecraft.loader.impl.fmod.ForgeLikeMixinConnector"])
+}
