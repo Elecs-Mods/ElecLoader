@@ -1,4 +1,4 @@
-package nl.elec332.minecraft.loader.impl.fmod;
+package nl.elec332.minecraft.loader.impl.neolang;
 
 import net.neoforged.fml.IModLoadingState;
 import net.neoforged.fml.IModStateProvider;
