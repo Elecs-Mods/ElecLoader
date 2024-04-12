@@ -2,6 +2,7 @@ package nl.elec332.minecraft.loader.impl;
 
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
+import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
 import nl.elec332.minecraft.loader.mod.event.ConstructModEvent;
 import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.*;
@@ -81,7 +82,7 @@ public class ElecModContainer implements IModContainer {
             Map<Class<?>, Object> allowedConstructorArgs = Map.of(
                     IEventBus.class, eventBus,
                     IModContainer.class, this,
-                    Dist.class, ElecModLoader.getDist());
+                    Dist.class, IModLoader.INSTANCE.getDist());
 
             var parameterTypes = constructor.getParameterTypes();
             Object[] constructorArgs = new Object[parameterTypes.length];

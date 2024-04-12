@@ -1,7 +1,6 @@
 package nl.elec332.minecraft.loader.impl;
 
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
-import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
@@ -20,10 +19,6 @@ import java.util.stream.Collectors;
  * Created by Elec332 on 13-02-2024
  */
 public final class ElecModLoader {
-
-    public static Dist getDist() {
-        return DeferredModLoader.INSTANCE.getDist();
-    }
 
     @NotNull
     public static ElecModLoader getModLoader() {

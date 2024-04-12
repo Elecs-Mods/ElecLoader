@@ -24,12 +24,12 @@ import java.util.stream.Collectors;
  * <p>
  * Mostly copied from: <a href="https://github.com/neoforged/FancyModLoader/blob/main/loader/src/main/java/net/neoforged/fml/common/asm/RuntimeDistCleaner.java">NeoForge</a>
  */
-public final class SideCleaner implements IClassTransformer {
+final class SideCleaner implements IClassTransformer {
 
-    public static void register(Consumer<IClassTransformer> registry, Function<Type, Set<IAnnotationData>> dataHandler) {
+    static void register(Consumer<IClassTransformer> registry, Function<Type, Set<IAnnotationData>> dataHandler) {
         Set<String> sides = new HashSet<>();
         dataHandler.apply(Type.getType(OnlyIn.class)).forEach(ad -> sides.add(ad.getClassType().getInternalName()));
-        registry.accept(new SideCleaner(LogManager.getLogger("ElecLoader SideCleaner"), ElecModLoader.getDist().name(), sides));
+        registry.accept(new SideCleaner(LogManager.getLogger("ElecLoader SideCleaner"), DeferredModLoader.INSTANCE.getDist().name(), sides));
     }
 
     private SideCleaner(Logger logger, String dist, Set<String> targets) {

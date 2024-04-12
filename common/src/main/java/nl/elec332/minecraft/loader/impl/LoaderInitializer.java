@@ -1,16 +1,13 @@
 package nl.elec332.minecraft.loader.impl;
 
 import nl.elec332.minecraft.loader.ElecLoaderMod;
-import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
+import nl.elec332.minecraft.loader.util.IClassTransformer;
 import org.jetbrains.annotations.NotNull;
-import org.objectweb.asm.Type;
 
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Created by Elec332 on 06-04-2024
@@ -25,7 +22,7 @@ public enum LoaderInitializer {
     private boolean checked = false;
     private boolean finalized = false;
 
-    public void startLoader(Consumer<Function<Type, Set<IAnnotationData>>> initializer) {
+    public void startLoader(Consumer<IClassTransformer> registry) {
         if (this.started) {
             throw new IllegalStateException();
         }
@@ -33,7 +30,8 @@ public enum LoaderInitializer {
         try {
             IAnnotationDataHandler dataHandler = AnnotationDataHandler.INSTANCE.identify(DeferredModLoader.INSTANCE.getModFiles(), DeferredModLoader.INSTANCE::hasWrongSideOnly);
             this.modLoader = new ElecModLoader(dataHandler::getAnnotationList);
-            initializer.accept(dataHandler::getAnnotationList);
+            SideCleaner.register(registry, dataHandler::getAnnotationList);
+            MappingTransformer.register(registry, dataHandler::getAnnotationList);
         } catch (Exception e) {
             mixinFailed(e);
             throw e;

@@ -59,6 +59,9 @@ dependencies {
     repackagedDeps("org.apache.maven:maven-artifact:3.8.5") {
         transitive = false
     }
+    repackagedDeps("net.neoforged:srgutils:1.0.0") {
+        transitive = false
+    }
     shadowSource("net.jodah:typetools:0.6.3")
     shadowSource tasks.makeMiniJar.outputs.files
 }
@@ -99,9 +102,17 @@ tasks.register("downloadMavenSource", DownloadGithub) {
     fromRepo("apache", "Maven", "3cebbf7")
 }
 
+tasks.register("downloadSRGSource", DownloadGithub) {
+    dstPackage = "nl.elec332.minecraft.repackaged"
+    packageRoot = "net.neoforged.srgutils"
+
+    fromRepo("neoforged", "SRGUtils", "207fb0a")
+}
+
 tasks.register("downloadSources") {
     dependsOn("downloadBusSource")
     dependsOn("downloadMavenSource")
+    dependsOn("downloadSRGSource")
 }
 
 var thisName = name

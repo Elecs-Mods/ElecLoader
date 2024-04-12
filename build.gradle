@@ -1,5 +1,11 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import net.neoforged.jarjar.metadata.*
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion
+import org.apache.maven.artifact.versioning.VersionRange
+
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
+import java.util.stream.Collectors
 
 buildscript {
     dependencies {
@@ -131,13 +137,6 @@ publishing {
 }
 
 ///////////////////////////////////////////////////////////////////////
-
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion
-import org.apache.maven.artifact.versioning.VersionRange
-
-import java.nio.file.Files
-import java.nio.file.StandardOpenOption
-import java.util.stream.Collectors
 
 abstract class JijFile extends DefaultTask {
 

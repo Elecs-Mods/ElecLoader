@@ -1,7 +1,6 @@
 package nl.elec332.minecraft.loader.impl.fabriclike.mixin.plugin;
 
 import nl.elec332.minecraft.loader.impl.LoaderInitializer;
-import nl.elec332.minecraft.loader.impl.SideCleaner;
 import nl.elec332.minecraft.loader.util.AbstractDynamicMixinPlugin;
 import nl.elec332.minecraft.loader.util.DynamicURLLoader;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
@@ -25,9 +24,7 @@ public final class FabricLikeMixinPlugin extends AbstractDynamicMixinPlugin {
 
     @Override
     protected void addTransformers(Consumer<IClassTransformer> registry) {
-        LoaderInitializer.INSTANCE.startLoader(dataHandler -> {
-            SideCleaner.register(registry, dataHandler);
-        });
+        LoaderInitializer.INSTANCE.startLoader(registry);
     }
 
     @Override

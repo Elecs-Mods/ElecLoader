@@ -179,7 +179,7 @@ public abstract class AbstractModLoader<T> implements IModLoader {
                 continue;
             }
             IAnnotationData.EnumHolder enumHolder = (IAnnotationData.EnumHolder) a.getAnnotationInfo().get("value");
-            if (!ElecModLoader.getDist().toString().equals(enumHolder.value())) {
+            if (!IModLoader.INSTANCE.getDist().toString().equals(enumHolder.value())) {
                 return true;
             }
         }
