@@ -82,7 +82,6 @@ public enum LoaderInitializer {
             getModLoader().finalizeLoading();
             AnnotationDataHandler.INSTANCE.preProcess();
             finalized = true;
-            AnnotationDataHandler.INSTANCE.process(ModLoadingStage.PRE_CONSTRUCT);
         }
     }
 

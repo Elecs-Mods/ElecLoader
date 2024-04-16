@@ -18,7 +18,6 @@ public final class FabricModStages {
 
     public static void discover() {
         ElecModLoader.getModLoader().useDiscoveredMods((meta, type) -> new ElecModContainer(meta, type.getClassName(), Class::forName, (e, c) -> new RuntimeException("Failed to " + e.getKey() + " mod " + meta.getModId(), e.getValue())));
-        LoaderInitializer.INSTANCE.finalizeLoading();
         IModLoaderEventHandler.INSTANCE.postModEvent(ConstructModEvent::new);
         processQueue(ModLoadingStage.CONSTRUCT);
     }

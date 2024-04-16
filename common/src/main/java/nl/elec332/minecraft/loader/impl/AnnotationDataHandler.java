@@ -31,7 +31,7 @@ enum AnnotationDataHandler {
 
     AnnotationDataHandler() {
         asmLoaderMap = Maps.newHashMap();
-        validStates = ImmutableList.copyOf(ModLoadingStage.values());
+        validStates = ImmutableList.copyOf(EnumSet.complementOf(EnumSet.of(ModLoadingStage.PRE_CONSTRUCT)));
         sideOnlyCache = Maps.newHashMap();
     }
 
@@ -314,18 +314,7 @@ enum AnnotationDataHandler {
     void process(ModLoadingStage state) {
         if (validStates.contains(state)) {
             Multimap<IModContainer, IAnnotationDataProcessor> dataProcessors = asmLoaderMap.get(state);
-            dataProcessors.forEach((mc, dataProcessor) -> {
-                Runnable exec = () -> dataProcessor.processASMData(asmDataHelper, state);;
-                if (state != ModLoadingStage.PRE_CONSTRUCT) {
-                    IModLoaderEventHandler.INSTANCE.enqueueDeferredWork(state, mc, exec);
-                } else {
-                    try {
-                        exec.run();
-                    } catch (Throwable e) {
-                        throw new RuntimeException("Failed to do pre-construct annotation processing work for mod: " + mc.getModId(), e);
-                    }
-                }
-            });
+            dataProcessors.forEach((mc, dataProcessor) -> IModLoaderEventHandler.INSTANCE.enqueueDeferredWork(state, mc, () -> dataProcessor.processASMData(asmDataHelper, state)));
             asmLoaderMap.remove(state);
         } else {
             throw new IllegalArgumentException();

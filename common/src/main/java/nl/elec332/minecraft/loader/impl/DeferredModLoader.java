@@ -88,6 +88,9 @@ public final class DeferredModLoader implements IModLoader {
     @Nullable
     @Override
     public IModContainer getModContainer(String id) {
+        if (!LoaderInitializer.INSTANCE.completedModList()) {
+            throw new IllegalStateException();
+        }
         return realModLoader.getModContainer(id);
     }
 
@@ -98,6 +101,9 @@ public final class DeferredModLoader implements IModLoader {
 
     @Override
     public Set<IModContainer> getMods() {
+        if (!LoaderInitializer.INSTANCE.completedModList()) {
+            throw new IllegalStateException();
+        }
         return realModLoader.getMods();
     }
 
