@@ -6,6 +6,7 @@ import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.impl.ElecModContainer;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import nl.elec332.minecraft.loader.impl.LoaderInitializer;
+import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
 import nl.elec332.minecraft.loader.mod.event.*;
 
 import java.util.Map;
@@ -18,28 +19,28 @@ public final class FabricModStages {
     public static void discover() {
         ElecModLoader.getModLoader().useDiscoveredMods((meta, type) -> new ElecModContainer(meta, type.getClassName(), Class::forName, (e, c) -> new RuntimeException("Failed to " + e.getKey() + " mod " + meta.getModId(), e.getValue())));
         LoaderInitializer.INSTANCE.finalizeLoading();
-        ElecModLoader.getModLoader().postModEvent(ConstructModEvent::new);
+        IModLoaderEventHandler.INSTANCE.postModEvent(ConstructModEvent::new);
         processQueue(ModLoadingStage.CONSTRUCT);
     }
 
     public static void init(Dist dist) {
-        ElecModLoader.getModLoader().postEvent(new ModConfigEvent());
-        ElecModLoader.getModLoader().postModEvent(CommonSetupEvent::new);
+        IModLoaderEventHandler.INSTANCE.postEvent(new ModConfigEvent());
+        IModLoaderEventHandler.INSTANCE.postModEvent(CommonSetupEvent::new);
         processQueue(ModLoadingStage.COMMON_SETUP);
         switch (dist) {
-            case CLIENT -> ElecModLoader.getModLoader().postModEvent(ClientSetupEvent::new);
-            case DEDICATED_SERVER -> ElecModLoader.getModLoader().postModEvent(ServerSetupEvent::new);
+            case CLIENT -> IModLoaderEventHandler.INSTANCE.postModEvent(ClientSetupEvent::new);
+            case DEDICATED_SERVER -> IModLoaderEventHandler.INSTANCE.postModEvent(ServerSetupEvent::new);
             default -> throw new IllegalArgumentException("Unknown state: " + dist.name());
         }
         processQueue(ModLoadingStage.SIDED_SETUP);
     }
 
     public static void postInit() {
-        ElecModLoader.getModLoader().postModEvent(SendModCommsEvent::new);
+        IModLoaderEventHandler.INSTANCE.postModEvent(SendModCommsEvent::new);
         processQueue(ModLoadingStage.MODCOMMS_SEND);
-        ElecModLoader.getModLoader().postModEvent(PostInitEvent::new);
+        IModLoaderEventHandler.INSTANCE.postModEvent(PostInitEvent::new);
         processQueue(ModLoadingStage.LATE_SETUP);
-        ElecModLoader.getModLoader().postModEvent(LoadCompleteEvent::new);
+        IModLoaderEventHandler.INSTANCE.postModEvent(LoadCompleteEvent::new);
         processQueue(ModLoadingStage.COMPLETE);
     }
 

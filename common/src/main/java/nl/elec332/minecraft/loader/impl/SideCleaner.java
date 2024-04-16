@@ -4,6 +4,7 @@ import com.google.common.collect.Streams;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.distmarker.OnlyIn;
 import nl.elec332.minecraft.loader.api.distmarker.OnlyIns;
+import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,7 +30,7 @@ final class SideCleaner implements IClassTransformer {
     static void register(Consumer<IClassTransformer> registry, Function<Type, Set<IAnnotationData>> dataHandler) {
         Set<String> sides = new HashSet<>();
         dataHandler.apply(Type.getType(OnlyIn.class)).forEach(ad -> sides.add(ad.getClassType().getInternalName()));
-        registry.accept(new SideCleaner(LogManager.getLogger("ElecLoader SideCleaner"), DeferredModLoader.INSTANCE.getDist().name(), sides));
+        registry.accept(new SideCleaner(LogManager.getLogger("ElecLoader SideCleaner"), IModLoader.INSTANCE.getDist().name(), sides));
     }
 
     private SideCleaner(Logger logger, String dist, Set<String> targets) {

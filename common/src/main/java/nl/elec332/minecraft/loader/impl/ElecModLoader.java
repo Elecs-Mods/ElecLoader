@@ -2,9 +2,9 @@ package nl.elec332.minecraft.loader.impl;
 
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
+import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
-import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.Event;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -26,7 +26,7 @@ public final class ElecModLoader {
     }
 
     public static void verifyModContainer(IModContainer modContainer, Set<String> packages) {
-        if (LoaderInitializer.INSTANCE.completedSetup()) {
+        if (LoaderInitializer.INSTANCE.completedSetup() || !getModLoader().discoveredAllMods()) {
             throw new IllegalStateException();
         }
         if (!(modContainer instanceof ElecModContainer)) {
@@ -47,6 +47,12 @@ public final class ElecModLoader {
         this.containers = new HashMap<>();
         this.modIds = Collections.unmodifiableSet(this.discoveredMods.keySet());
         this.logger = LogManager.getLogger("ElecModLoader");
+        ElecModLoaderEventHandler.INSTANCE.containers = () -> {
+            if (!ElecModLoader.getModLoader().discoveredAllMods()) {
+                throw new IllegalStateException();
+            }
+            return containers.values().stream();
+        };
 
         this.logger.debug("Discovered mods: " + this.modIds);
     }
@@ -56,8 +62,12 @@ public final class ElecModLoader {
     private final Map<String, ElecModContainer> containers;
     private final Logger logger;
 
+    void announcePreLaunch() {
+        this.logger.info("Preloader hooks initialized");
+    }
+
     void checkEnvironment() {
-        if (!SidedTest.testSide(DeferredModLoader.INSTANCE.getDist())) {
+        if (!SidedTest.testSide(IModLoader.INSTANCE.getDist())) {
             throw new RuntimeException("SideCleaner isn't active!");
         }
         this.logger.debug("Environment check succeeded");
@@ -68,7 +78,7 @@ public final class ElecModLoader {
             throw new IllegalStateException("ModLoader finalization is being called too early!");
         }
         getModLoader().containers.forEach((name, container) -> {
-            IModContainer mc = DeferredModLoader.INSTANCE.getModContainer(name);
+            IModContainer mc = IModLoader.INSTANCE.getModContainer(name);
             if (mc == null) {
                 throw new RuntimeException("Failed to load linked mod " + name);
             }
@@ -78,7 +88,7 @@ public final class ElecModLoader {
         });
         Set<String> missing = new HashSet<>();
         for (String s : this.modIds) {
-            IModContainer mc = DeferredModLoader.INSTANCE.getModContainer(s);
+            IModContainer mc = IModLoader.INSTANCE.getModContainer(s);
             if (!(mc instanceof ElecModContainer)) {
                 missing.add(s);
             }
@@ -86,12 +96,12 @@ public final class ElecModLoader {
         if (!missing.isEmpty()) {
             throw new IllegalStateException("Failed to load mods: " + missing);
         }
-        AnnotationDataHandler.INSTANCE.attribute(DeferredModLoader.INSTANCE.getMods());
+        AnnotationDataHandler.INSTANCE.attribute(IModLoader.INSTANCE.getMods());
         int s = this.containers.size();
         this.logger.info("Finished modlist, found " + s + " mod" + (s == 1 ? "" : "s"));
     }
 
-    boolean discoveredAllMods() {
+    private boolean discoveredAllMods() {
         return discoveredMods == null;
     }
 
@@ -101,7 +111,7 @@ public final class ElecModLoader {
                 throw new IllegalStateException();
             }
             discoveredMods.forEach((name, type) -> {
-                var meta = DeferredModLoader.INSTANCE.getModMetaData(name);
+                var meta = IModLoader.INSTANCE.getModMetaData(name);
                 if (meta == null || !name.equals(meta.getModId())) {
                     throw new IllegalStateException();
                 }
@@ -126,7 +136,7 @@ public final class ElecModLoader {
             if (type == null) {
                 throw new IllegalArgumentException();
             }
-            var meta = DeferredModLoader.INSTANCE.getModMetaData(name);
+            var meta = IModLoader.INSTANCE.getModMetaData(name);
             if (meta == null || !name.equals(meta.getModId())) {
                 throw new IllegalStateException();
             }
@@ -160,25 +170,6 @@ public final class ElecModLoader {
             throw new IllegalStateException();
         }
         return containers.get(modId);
-    }
-
-    public <T extends Event> T postEvent(T event) {
-        if (!discoveredAllMods()) {
-            throw new IllegalStateException();
-        }
-        containers.values().forEach(mc -> mc.getEventBus().post(event));
-        return event;
-    }
-
-    public <T extends Event> void postModEvent(Function<IModContainer, T> event) {
-        if (!discoveredAllMods()) {
-            throw new IllegalStateException();
-        }
-        containers.values().forEach(mc -> mc.getEventBus().post(event.apply(mc)));
-    }
-
-    public void enqueueDeferredWork(ModLoadingStage stage, IModContainer modContainer, Runnable work) {
-        DeferredModLoader.INSTANCE.enqueueDeferredWork(stage, modContainer, work);
     }
 
     public void processAnnotations(ModLoadingStage stage) {

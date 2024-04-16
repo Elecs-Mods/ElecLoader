@@ -39,10 +39,10 @@ final class MappingTransformer implements IClassTransformer {
     private static final IMappingFile NULL_MAPPINGS = IMappingBuilder.create().build().getMap("left", "right");
 
     static void register(Consumer<IClassTransformer> registry, Function<Type, Set<IAnnotationData>> dataHandler) {
-        MappingType loaderTarget = DeferredModLoader.INSTANCE.getMappingTarget();
-        MappingType runtime = DeferredModLoader.INSTANCE.isDevelopmentEnvironment() ? MappingType.NAMED : loaderTarget;
+        MappingType loaderTarget = IModLoader.INSTANCE.getMappingTarget();
+        MappingType runtime = IModLoader.INSTANCE.isDevelopmentEnvironment() ? MappingType.NAMED : loaderTarget;
         Set<IMappingProvider> mappers = ModServiceLoader.loadModService(ServiceLoader.load(IMappingProvider.class, IMappingProvider.class.getClassLoader()));
-        DeferredModLoader.INSTANCE.getModFiles().forEach(f -> {
+        IModLoader.INSTANCE.getModFiles().forEach(f -> {
             Optional<Path> mff = f.findPath(JarFile.MANIFEST_NAME);
             MappingType type;
             boolean hasMixedMappings;
@@ -115,7 +115,7 @@ final class MappingTransformer implements IClassTransformer {
                 LOGGER.debug("Skipping remapping for file " + f + " as it doesn't contain remapping information");
                 return;
             }
-            if (hasMixedMappings && DeferredModLoader.INSTANCE.isDevelopmentEnvironment() && loaderTarget != MappingType.NAMED) {
+            if (hasMixedMappings && IModLoader.INSTANCE.isDevelopmentEnvironment() && loaderTarget != MappingType.NAMED) {
                 LOGGER.warn("File " + f + " was compiled with mixed mappings. Unless this file was otherwise deobfed it is unlikely to work.");
             }
             if (fileType == runtime) {
@@ -127,7 +127,7 @@ final class MappingTransformer implements IClassTransformer {
             }
             IMappingFile target = Objects.requireNonNull(mappings.get(runtime));
 
-            if (DeferredModLoader.INSTANCE.getModLoaderType() == IModLoader.Type.FABRIC || DeferredModLoader.INSTANCE.getModLoaderType() == IModLoader.Type.QUILT) {
+            if (IModLoader.INSTANCE.getModLoaderType() == IModLoader.Type.FABRIC || IModLoader.INSTANCE.getModLoaderType() == IModLoader.Type.QUILT) {
                 dataHandler.apply(org.objectweb.asm.Type.getType(Mixin.class)).forEach(d -> {
                     if (remapTargets.contains(d.getClassType().getInternalName())) {
                         throw new UnsupportedOperationException("Due to limitations in the Fabric Loader it is not possible to remap Mixins :(");

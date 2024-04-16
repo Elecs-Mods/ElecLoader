@@ -10,6 +10,8 @@ import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.IEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Objects;
+
 /**
  * Created by Elec332 on 10-02-2024
  */
@@ -17,7 +19,7 @@ import org.apache.logging.log4j.Logger;
 public class ElecLoaderMod {
 
     public ElecLoaderMod(IEventBus eventBus, Dist dist) {
-        LOGGER.info("ElecLoader loading for side " + dist + " for modloader " + IModLoader.INSTANCE.getModLoaderName());
+        LOGGER.info(Objects.requireNonNull(IModLoader.INSTANCE.getModMetaData(MODID)).getModName() + " loading for loader " + IModLoader.INSTANCE.getModLoaderName() + " on dist " + dist);
         LoaderInitializer.INSTANCE.checkFinalized();
         eventBus.addListener(this::onConstruct);
         eventBus.addListener(this::preInit);

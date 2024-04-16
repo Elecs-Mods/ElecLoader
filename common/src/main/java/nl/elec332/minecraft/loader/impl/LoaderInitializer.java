@@ -2,6 +2,7 @@ package nl.elec332.minecraft.loader.impl;
 
 import nl.elec332.minecraft.loader.ElecLoaderMod;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
+import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +21,7 @@ public enum LoaderInitializer {
     private boolean started = false;
     private Throwable crashed = null;
     private boolean checked = false;
+    private boolean finalizing = false;
     private boolean finalized = false;
 
     public void startLoader(Consumer<IClassTransformer> registry) {
@@ -28,10 +30,11 @@ public enum LoaderInitializer {
         }
         this.started = true;
         try {
-            IAnnotationDataHandler dataHandler = AnnotationDataHandler.INSTANCE.identify(DeferredModLoader.INSTANCE.getModFiles(), DeferredModLoader.INSTANCE::hasWrongSideOnly);
+            IAnnotationDataHandler dataHandler = AnnotationDataHandler.INSTANCE.identify(IModLoader.INSTANCE.getModFiles(), IModLoader.INSTANCE::hasWrongSideOnly);
             this.modLoader = new ElecModLoader(dataHandler::getAnnotationList);
             SideCleaner.register(registry, dataHandler::getAnnotationList);
             MappingTransformer.register(registry, dataHandler::getAnnotationList);
+            this.modLoader.announcePreLaunch();
         } catch (Exception e) {
             mixinFailed(e);
             throw e;
@@ -71,13 +74,14 @@ public enum LoaderInitializer {
             checkEnvironment();
 
             DeferredModLoader.INSTANCE.fillModContainers();
-            if (getModLoader().getModContainer(ElecLoaderMod.MODID) == null || DeferredModLoader.INSTANCE.getModContainer(ElecLoaderMod.MODID) == null) {
+            this.finalizing = true;
+
+            if (getModLoader().getModContainer(ElecLoaderMod.MODID) == null || IModLoader.INSTANCE.getModContainer(ElecLoaderMod.MODID) == null) {
                 loaderModNotFound();
             }
-
             getModLoader().finalizeLoading();
-            this.finalized = true;
             AnnotationDataHandler.INSTANCE.preProcess();
+            finalized = true;
             AnnotationDataHandler.INSTANCE.process(ModLoadingStage.PRE_CONSTRUCT);
         }
     }
@@ -86,6 +90,10 @@ public enum LoaderInitializer {
         if (!finalized) {
             throw new IllegalStateException("Loader failed to properly finish loading!");
         }
+    }
+
+    public boolean completedModList() {
+        return finalizing;
     }
 
     public boolean completedSetup() {

@@ -8,7 +8,9 @@ import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataProcessor;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
+import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
+import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 
@@ -145,11 +147,11 @@ enum AnnotationDataHandler {
 
         Function<IAnnotationData, IModContainer> modSearcher = annotationData -> {
             if (annotationData.getClassName().startsWith("net.minecraft.") || (annotationData.getClassName().startsWith("mcp.") && !annotationData.getClassName().contains("mobius"))) {
-                return Objects.requireNonNull(DeferredModLoader.INSTANCE.getModContainer("minecraft"));//FMLHelper.getModList().getModContainerById(DefaultModInfos.minecraftModInfo.getModId()).orElseThrow(NullPointerException::new);
+                return Objects.requireNonNull(IModLoader.INSTANCE.getModContainer("minecraft"));//FMLHelper.getModList().getModContainerById(DefaultModInfos.minecraftModInfo.getModId()).orElseThrow(NullPointerException::new);
             }
             IModFile owner = annotationData.getFile();
             if (owner.getMods().size() == 1) {
-                return Objects.requireNonNull(DeferredModLoader.INSTANCE.getModContainer(owner.getMods().get(0).getModId()));
+                return Objects.requireNonNull(IModLoader.INSTANCE.getModContainer(owner.getMods().get(0).getModId()));
             }
             //TODO: Debug remove, allow null below?
             System.out.println(annotationData);
@@ -243,7 +245,7 @@ enum AnnotationDataHandler {
                 boolean eb = false;
                 Class<?> clazz;
                 try {
-                    clazz = Class.forName(data.getClassName(), true, DeferredModLoader.INSTANCE.getModClassLoader());
+                    clazz = Class.forName(data.getClassName(), true, IModLoader.INSTANCE.getModClassLoader());
                 } catch (ClassNotFoundException e) {
                     //Do nothing, class is probably annotated with @SideOnly
                     continue;
@@ -309,17 +311,13 @@ enum AnnotationDataHandler {
         }
     }
 
-    boolean hasFinalizedLoading() {
-        return !asmLoaderMap.containsKey(ModLoadingStage.PRE_CONSTRUCT);
-    }
-
     void process(ModLoadingStage state) {
         if (validStates.contains(state)) {
             Multimap<IModContainer, IAnnotationDataProcessor> dataProcessors = asmLoaderMap.get(state);
             dataProcessors.forEach((mc, dataProcessor) -> {
                 Runnable exec = () -> dataProcessor.processASMData(asmDataHelper, state);;
                 if (state != ModLoadingStage.PRE_CONSTRUCT) {
-                    DeferredModLoader.INSTANCE.enqueueDeferredWork(state, mc, exec);
+                    IModLoaderEventHandler.INSTANCE.enqueueDeferredWork(state, mc, exec);
                 } else {
                     try {
                         exec.run();
@@ -382,7 +380,7 @@ enum AnnotationDataHandler {
                 return clazz;
             }
             try {
-                return clazz = Class.forName(getClassName(), true, DeferredModLoader.INSTANCE.getModClassLoader());
+                return clazz = Class.forName(getClassName(), true, IModLoader.INSTANCE.getModClassLoader());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

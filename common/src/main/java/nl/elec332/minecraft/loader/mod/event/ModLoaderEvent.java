@@ -3,6 +3,7 @@ package nl.elec332.minecraft.loader.mod.event;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
+import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
 import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.Event;
 
 /**
@@ -27,7 +28,7 @@ public abstract class ModLoaderEvent extends Event {
     }
 
     public void enqueueDeferredWork(Runnable work) {
-        ElecModLoader.getModLoader().enqueueDeferredWork(getLoadingStage(), getModContainer(), work);
+        IModLoaderEventHandler.INSTANCE.enqueueDeferredWork(getLoadingStage(), getModContainer(), work);
     }
 
 }

@@ -66,7 +66,7 @@ public class ElecModContainer implements IModContainer {
     }
 
     private void constructMod() {
-        if (!AnnotationDataHandler.INSTANCE.hasFinalizedLoading()) {
+        if (!LoaderInitializer.INSTANCE.completedModList()) {
             throw new IllegalStateException("ModList hasn't been finalized before instantiation!");
         }
         try {
