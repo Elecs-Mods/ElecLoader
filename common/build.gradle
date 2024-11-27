@@ -7,7 +7,7 @@ modloader {
             logo("assets/elecloader/icon.png")
         }
         dependsOn("minecraft") {
-            versionRange(">=1.20.4", "<1.21")
+            versionRange(">=1.20.4", "<1.22")
         }
         loader "elecjava"
     }

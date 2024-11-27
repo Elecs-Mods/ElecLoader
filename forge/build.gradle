@@ -17,6 +17,10 @@ modloader {
     mainModSource = sourceSets.modImpl
 }
 
+dependencies {
+    implementation('net.sf.jopt-simple:jopt-simple:5.0.4') { version { strictly '5.0.4' } }
+}
+
 compileModImplJava {
     if (findProject(":neo") == null) {
         source("../neo/src/modImplShared/java")

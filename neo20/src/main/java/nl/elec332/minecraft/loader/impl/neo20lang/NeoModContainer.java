@@ -1,8 +1,8 @@
-package nl.elec332.minecraft.loader.impl.neolang;
+package nl.elec332.minecraft.loader.impl.neo20lang;
 
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingException;
-import net.neoforged.fml.ModLoadingIssue;
+import net.neoforged.fml.ModLoadingStage;
 import net.neoforged.fml.event.IModBusEvent;
 import net.neoforged.fml.event.lifecycle.ParallelDispatchEvent;
 import net.neoforged.neoforgespi.language.IModInfo;
@@ -19,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 
 /**
@@ -28,6 +29,7 @@ public final class NeoModContainer extends ModContainer {
 
     public NeoModContainer(IModInfo info, ModuleLayer gameLayer) {
         super(info);
+        this.contextExtension = () -> null;
         this.neoEventBus = net.neoforged.bus.api.BusBuilder.builder()
                 .setExceptionHandler(this::onNeoEventFailed)
                 .markerType(IModBusEvent.class)
@@ -38,8 +40,9 @@ public final class NeoModContainer extends ModContainer {
         elecModContainer = ElecModLoader.getModLoader().useDiscoveredMod(info.getModId(), (meta, types) -> new ElecModContainer(meta, types, name -> {
             var layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
             return Class.forName(layer, name);
-        }, (e, t) -> new ModLoadingException(ModLoadingIssue.error(e == ElecModContainer.ErrorType.CLASSLOAD ? "fml.modloadingissue.failedtoloadmodclass" : "fml.modloadingissue.failedtoloadmod").withCause(t).withAffectedMod(info)),
+        }, (e, t) -> new ModLoadingException(info, ModLoadingStage.CONSTRUCT, e == ElecModContainer.ErrorType.CLASSLOAD ? "fml.modloading.failedtoloadmodclass" : "fml.modloading.failedtoloadmod", t, "<>"),
                 () -> this.workQueue::enqueueDeferredWork));
+        this.activityMap.put(ModLoadingStage.CONSTRUCT, this.elecModContainer::constructMod);
 
         EVENT_MAP.forEach((type, factory) -> neoEventBus.addListener(type, e -> {
             final Event event = factory.apply(e, elecModContainer);
@@ -64,8 +67,13 @@ public final class NeoModContainer extends ModContainer {
     }
 
     @Override
-    protected void constructMod() {
-        this.elecModContainer.constructMod();
+    public boolean matches(Object mod) {
+        return Objects.equals(elecModContainer.getFirstModInstance(), mod);
+    }
+
+    @Override
+    public Object getMod() {
+        return elecModContainer.getFirstModInstance();
     }
 
     @Override

@@ -40,6 +40,8 @@ configurations {
     j.manifest {
         attributes(["FMLModType": "LIBRARY"])
     }
+    j.dependsOn(project(":neo20").tasks.classes)
+    j.from project(":neo20").sourceSets.main.output
 }
 
 tasks.register("modImplJar", Jar) {

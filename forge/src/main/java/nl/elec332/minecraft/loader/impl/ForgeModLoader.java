@@ -151,6 +151,9 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
 
     @Override
     public MappingType getMappingTarget() {
+        if (Integer.parseInt(ForgeVersion.getVersion().split("\\.")[0]) > 50) { //Forge switched from SRG to named in 1.20.6
+            return MappingType.NAMED;
+        }
         return MappingType.FORGE_SRG;
     }
 

@@ -179,7 +179,15 @@ final class NeoModLoader extends AbstractModLoader<ModInfo> {
 
     @Override
     public boolean hasLoaderErrored() {
-        return !ModLoader.isLoadingStateValid();
+        try {
+            return ModLoader.hasErrors();
+        } catch (Exception e) {
+            try {
+                return !((boolean) ModLoader.class.getDeclaredMethod("isLoadingStateValid").invoke(null)); //Old pre-1.21 method
+            } catch (Exception e2) {
+                throw new RuntimeException(e2);
+            }
+        }
     }
 
 }
