@@ -38,7 +38,7 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
 
             @Override
             public void scanFile(Consumer<Path> consumer) {
-                this.mf.getProvider().scanFile(this.mf, consumer);
+                this.mf.scanFile(consumer);
             }
 
             @Override
@@ -59,7 +59,7 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
             @Override
             protected void scanFile() {
                 scanFile(p -> this.classPaths.add(p.toString()));
-                this.pack.addAll(this.mf.getSecureJar().moduleDataProvider().descriptor().packages());
+                this.pack.addAll(this.mf.getSecureJar().getPackages());
             }
 
             @Override
@@ -151,8 +151,12 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
 
     @Override
     public MappingType getMappingTarget() {
-        if (Integer.parseInt(ForgeVersion.getVersion().split("\\.")[0]) > 50) { //Forge switched from SRG to named in 1.20.6
-            return MappingType.NAMED;
+        try {
+            if (Integer.parseInt(ForgeVersion.getVersion().split("\\.")[0]) > 50) { //Forge switched from SRG to named in 1.20.6
+                return MappingType.NAMED;
+            }
+        } catch (Throwable e) {
+            // Crashes below 1.20.1, but that's fine...
         }
         return MappingType.FORGE_SRG;
     }

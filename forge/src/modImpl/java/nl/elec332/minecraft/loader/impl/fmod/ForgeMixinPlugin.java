@@ -1,6 +1,7 @@
 package nl.elec332.minecraft.loader.impl.fmod;
 
 import net.minecraftforge.fml.loading.LoadingModList;
+import nl.elec332.minecraft.loader.impl.LoaderInitializer;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -18,17 +19,22 @@ import java.util.stream.Stream;
 public final class ForgeMixinPlugin implements IMixinConfigPlugin {
 
     static {
-        if (isForge()) {
-            LoadingModList.get().getMods().stream()
-                    .map(m -> m.getOwningFile().getConfig())
-                    .flatMap(cfg -> {
-                        try {
-                            return cfg.getConfigList("forgemixins").stream().map(e -> (String) e.getConfigElement("config").get());
-                        } catch (Exception e) {
-                            return Stream.empty();
-                        }
-                    }).collect(Collectors.toSet())
-                    .forEach(Mixins::addConfiguration);
+        try {
+            if (isForge()) {
+                LoadingModList.get().getMods().stream()
+                        .map(m -> m.getOwningFile().getConfig())
+                        .flatMap(cfg -> {
+                            try {
+                                //Use string-array for <1.19.2 support
+                                return cfg.getConfigList(new String[]{"forgemixins"}).stream().map(e -> (String) e.getConfigElement("config").get());
+                            } catch (Exception e) {
+                                return Stream.empty();
+                            }
+                        }).collect(Collectors.toSet())
+                        .forEach(Mixins::addConfiguration);
+            }
+        } catch (Throwable e) {
+            LoaderInitializer.INSTANCE.mixinFailed(e);
         }
     }
 

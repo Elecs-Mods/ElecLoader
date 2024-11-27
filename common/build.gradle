@@ -4,10 +4,10 @@ modloader {
         sources "https://github.com/"
         mod {
             homepage "homepage"
-            logo("assets/elecloader/icon.png")
+            logo("elecloader_icon.png")
         }
         dependsOn("minecraft") {
-            versionRange(">=1.20.4", "<1.22")
+            versionRange(">=1.18.2", "<1.22")
         }
         loader "elecjava"
     }
