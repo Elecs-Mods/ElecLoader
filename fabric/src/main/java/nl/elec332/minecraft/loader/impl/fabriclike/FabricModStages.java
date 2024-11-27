@@ -3,13 +3,15 @@ package nl.elec332.minecraft.loader.impl.fabriclike;
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
+import nl.elec332.minecraft.loader.impl.DeferredWorkQueue;
 import nl.elec332.minecraft.loader.impl.ElecModContainer;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
-import nl.elec332.minecraft.loader.impl.LoaderInitializer;
 import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
 import nl.elec332.minecraft.loader.mod.event.*;
+import nl.elec332.minecraft.loader.util.LateObject;
 
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * Created by Elec332 on 13-02-2024
@@ -17,7 +19,13 @@ import java.util.Map;
 public final class FabricModStages {
 
     public static void discover() {
-        ElecModLoader.getModLoader().useDiscoveredMods((meta, type) -> new ElecModContainer(meta, type.getClassName(), Class::forName, (e, c) -> new RuntimeException("Failed to " + e.getKey() + " mod " + meta.getModId(), e.getValue())));
+        ElecModLoader.getModLoader().useDiscoveredMods((meta, types) -> {
+            LateObject<BiConsumer<ModLoadingStage, Runnable>> reg = new LateObject<>();
+            final ElecModContainer ret = new ElecModContainer(meta, types, Class::forName, (e, t) -> new RuntimeException("Failed to " + e + " mod " + meta.getModId(), t), reg);
+            reg.set(((stage, runnable) -> FabricModStages.DEFERRED_WORK_QUEUE.enqueueDeferredWork(stage, Map.entry(ret, runnable))));
+            return ret;
+        });
+        ElecModLoader.getModLoader().getMods().forEach(mc -> ((ElecModContainer) mc).constructMod());
         IModLoaderEventHandler.INSTANCE.postModEvent(ConstructModEvent::new);
         processQueue(ModLoadingStage.CONSTRUCT);
     }
@@ -43,25 +51,16 @@ public final class FabricModStages {
         processQueue(ModLoadingStage.COMPLETE);
     }
 
+    private static final DeferredWorkQueue<Map.Entry<IModContainer, Runnable>> DEFERRED_WORK_QUEUE = new DeferredWorkQueue<>();
+
     private static void processQueue(ModLoadingStage stage) {
-        synchronized (AbstractFabricBasedModLoader.DEFERRED_WORK_QUEUE) {
-            var runnables = AbstractFabricBasedModLoader.DEFERRED_WORK_QUEUE.get(stage);
-            if (runnables == null) {
-                throw new IllegalArgumentException("Stage already processed: " + stage.getName());
+        DEFERRED_WORK_QUEUE.processQueue(stage, entry -> {
+            try {
+                entry.getValue().run();
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed to do deferred work for mod: " + entry.getKey().getModId(), e);
             }
-            Map.Entry<IModContainer, Runnable> entry;
-            while ((entry = runnables.poll()) != null) {
-                try {
-                    entry.getValue().run();
-                } catch (Throwable e) {
-                    throw new RuntimeException("Failed to do deferred work for mod: " + entry.getKey().getModId(), e);
-                }
-            }
-            if (!runnables.isEmpty()) {
-                throw new RuntimeException();
-            }
-            AbstractFabricBasedModLoader.DEFERRED_WORK_QUEUE.remove(stage);
-        }
+        });
     }
 
 }

@@ -1,8 +1,6 @@
 package nl.elec332.minecraft.loader.mod;
 
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
-import nl.elec332.minecraft.loader.api.modloader.IModLoader;
-import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.api.service.ModServiceLoader;
 import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.Event;
 
@@ -36,18 +34,5 @@ public interface IModLoaderEventHandler {
      * @param <T> The event type
      */
     <T extends Event> void postModEvent(Function<IModContainer, T> event);
-
-    /**
-     * Enqueues work to be run after the provided {@link ModLoadingStage} has completed.
-     * Useful as mod may be loaded async or in an unpredictable order.
-     * @see IModLoader#enqueueDeferredWork(ModLoadingStage, IModContainer, Runnable)
-     *
-     * @param stage The stage the provided worker should run after
-     * @param modContainer The owner of the provided worker
-     * @param runnable The worker to be run after the specified {@link ModLoadingStage}
-     */
-    default void enqueueDeferredWork(ModLoadingStage stage, IModContainer modContainer, Runnable runnable) {
-        IModLoader.INSTANCE.enqueueDeferredWork(stage, modContainer, runnable);
-    }
 
 }

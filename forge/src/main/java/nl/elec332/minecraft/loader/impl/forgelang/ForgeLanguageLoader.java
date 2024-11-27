@@ -8,13 +8,13 @@ import net.minecraftforge.forgespi.language.ILifecycleEvent;
 import net.minecraftforge.forgespi.language.IModInfo;
 import net.minecraftforge.forgespi.language.IModLanguageProvider;
 import net.minecraftforge.forgespi.language.ModFileScanData;
+import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import nl.elec332.minecraft.loader.impl.LoaderConstants;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -34,20 +34,14 @@ public class ForgeLanguageLoader implements IModLanguageProvider {
 
     @Override
     public Consumer<ModFileScanData> getFileVisitor() {
-        return scanResult -> {
-            final Map<String, ModTarget> modTargetMap = scanResult.getAnnotations().stream()
-                    .filter(ad -> ad.annotationType().equals(LoaderConstants.MODANNOTATION))
-                    .map(ad -> new ModTarget(ad.clazz().getClassName(), (String)ad.annotationData().get("value")))
-                    .collect(Collectors.toMap(ModTarget::modId, Function.identity(), (a, b) -> a));
-            scanResult.addLanguageLoader(modTargetMap);
-        };
+        return scanResult -> scanResult.addLanguageLoader(ElecModLoader.waitForModLoader().getDiscoveredMods().stream().collect(Collectors.toMap(Function.identity(), s -> new ModTarget())));
     }
 
     @Override
     public <R extends ILifecycleEvent<R>> void consumeLifecycleEvent(Supplier<R> consumeEvent) {
     }
 
-    private record ModTarget(String className, String modId) implements IModLanguageLoader {
+    private static class ModTarget implements IModLanguageLoader {
 
         @SuppressWarnings("unchecked")
         @Override
@@ -59,8 +53,8 @@ public class ForgeLanguageLoader implements IModLanguageProvider {
 
                 final Class<?> fmlContainer = Class.forName(LoaderConstants.PACKAGE_ROOT + ".impl.forgelang.ForgeModContainer", true, Thread.currentThread().getContextClassLoader());
                 LOGGER.debug(Logging.LOADING, "Loading ForgeModContainer from classloader {} - got {}", Thread.currentThread().getContextClassLoader(), fmlContainer.getClassLoader());
-                final Constructor<?> constructor = fmlContainer.getConstructor(IModInfo.class, String.class, ModFileScanData.class, ModuleLayer.class);
-                return (T) constructor.newInstance(info, className, modFileScanResults, gameLayer);
+                final Constructor<?> constructor = fmlContainer.getConstructor(IModInfo.class, ModuleLayer.class);
+                return (T) constructor.newInstance(info, gameLayer);
             } catch (InvocationTargetException e) {
                 LOGGER.fatal(Logging.LOADING, "Failed to build mod", e);
                 if (e.getTargetException() instanceof ModLoadingException mle) {

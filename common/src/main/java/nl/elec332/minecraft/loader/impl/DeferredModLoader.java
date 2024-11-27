@@ -58,7 +58,7 @@ public final class DeferredModLoader implements IModLoader {
             throw new RuntimeException("Failed to properly load modloader!");
         }
         realModLoader = (AbstractModLoader<?>) loaded.iterator().next();
-        if (realModLoader.getModMetaData(ElecLoaderMod.MODID) == null) {
+        if (realModLoader.getModMetaData(ElecLoaderMod.MODID) == null && !hasLoaderErrored()) {
             LoaderInitializer.INSTANCE.loaderModNotFound();
         }
         INSTANCE = this;
@@ -115,14 +115,6 @@ public final class DeferredModLoader implements IModLoader {
     @Override
     public Set<IModFile> getLibraries() {
         return realModLoader.getLibraries();
-    }
-
-    @Override
-    public void enqueueDeferredWork(ModLoadingStage stage, IModContainer modContainer, Runnable runnable) {
-        if (stage == ModLoadingStage.PRE_CONSTRUCT) {
-            throw new UnsupportedOperationException();
-        }
-        realModLoader.enqueueDeferredWork(stage, modContainer, runnable);
     }
 
     @Override

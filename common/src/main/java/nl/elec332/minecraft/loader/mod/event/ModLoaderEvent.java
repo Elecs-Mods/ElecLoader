@@ -2,8 +2,7 @@ package nl.elec332.minecraft.loader.mod.event;
 
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
-import nl.elec332.minecraft.loader.impl.ElecModLoader;
-import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
+import nl.elec332.minecraft.loader.impl.ElecModContainer;
 import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.Event;
 
 /**
@@ -27,8 +26,14 @@ public abstract class ModLoaderEvent extends Event {
         return modContainer;
     }
 
+    /**
+     * Enqueues work to be run after this {@link ModLoadingStage} has completed.
+     * Useful as mod may be loaded async or in an unpredictable order.
+     *
+     * @param work The worker to be run after the specified {@link ModLoadingStage}
+     */
     public void enqueueDeferredWork(Runnable work) {
-        IModLoaderEventHandler.INSTANCE.enqueueDeferredWork(getLoadingStage(), getModContainer(), work);
+        ((ElecModContainer) getModContainer()).enqueueDeferredWork(getLoadingStage(), work);
     }
 
 }

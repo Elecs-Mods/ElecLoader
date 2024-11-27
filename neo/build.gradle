@@ -12,13 +12,33 @@ modloader {
     mainModSource = sourceSets.modImpl
 }
 
+tasks.register("neoFakeMeta") {
+    var out = project.layout.buildDirectory.dir("generated/neoStuff").get()
+    outputs.dir(out)
+    doLast {
+        var of = out.file("META-INF/MANIFEST.MF").asFile
+        of.parentFile.mkdirs()
+        of.text = "FMLModType: LIBRARY\n"
+    }
+}
+
+tasks.processModRunResources.from(tasks.neoFakeMeta.outputs)
+
+subsystems {
+    conventions {
+        sourceSets {
+            it.shouldMainSourceSetBeAutomaticallyAddedToRuns(false)
+        }
+    }
+}
+
 configurations {
     modRunImplementation.extendsFrom implementation
 }
 
 [jar, devJar].each { j ->
     j.manifest {
-        attributes(["FMLModType": "LANGPROVIDER"])
+        attributes(["FMLModType": "LIBRARY"])
     }
 }
 

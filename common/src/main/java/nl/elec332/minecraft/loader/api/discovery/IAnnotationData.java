@@ -3,6 +3,7 @@ package nl.elec332.minecraft.loader.api.discovery;
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
 import org.objectweb.asm.Type;
 
+import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -30,6 +31,11 @@ public interface IAnnotationData {
      * @return The type of the annotation described by this object
      */
     Type getAnnotationType();
+
+    /**
+     * @return The type of element that has been annotated
+     */
+    ElementType getTargetType();
 
     /**
      * @return The actual data contained in the annotation described by this object

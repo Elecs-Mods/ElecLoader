@@ -3,7 +3,6 @@ package nl.elec332.minecraft.loader.impl;
 import nl.elec332.minecraft.loader.ElecLoaderMod;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
-import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.util.IClassTransformer;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,6 +17,8 @@ public enum LoaderInitializer {
     INSTANCE;
 
     private ElecModLoader modLoader;
+    private final Object START_LOCK = new Object();
+    private boolean starting = false;
     private boolean started = false;
     private Throwable crashed = null;
     private boolean checked = false;
@@ -25,19 +26,27 @@ public enum LoaderInitializer {
     private boolean finalized = false;
 
     public void startLoader(Consumer<IClassTransformer> registry) {
-        if (this.started) {
-            throw new IllegalStateException();
-        }
-        this.started = true;
-        try {
-            IAnnotationDataHandler dataHandler = AnnotationDataHandler.INSTANCE.identify(IModLoader.INSTANCE.getModFiles(), IModLoader.INSTANCE::hasWrongSideOnly);
-            this.modLoader = new ElecModLoader(dataHandler::getAnnotationList);
-            SideCleaner.register(registry, dataHandler::getAnnotationList);
-            MappingTransformer.register(registry, dataHandler::getAnnotationList);
-            this.modLoader.announcePreLaunch();
-        } catch (Exception e) {
-            mixinFailed(e);
-            throw e;
+        synchronized (this) {
+            if (this.started || this.starting) {
+                throw new IllegalStateException();
+            }
+            synchronized (START_LOCK) {
+                this.starting = true;
+            }
+            try {
+                IAnnotationDataHandler dataHandler = AnnotationDataHandler.INSTANCE.identify(IModLoader.INSTANCE.getModFiles(), IModLoader.INSTANCE::hasWrongSideOnly);
+                this.modLoader = new ElecModLoader(dataHandler::getAnnotationList);
+                SideCleaner.register(registry, dataHandler::getAnnotationList);
+                MappingTransformer.register(registry, dataHandler::getAnnotationList);
+                this.modLoader.announcePreLaunch();
+                synchronized (START_LOCK) {
+                    this.started = true;
+                    START_LOCK.notifyAll();
+                }
+            } catch (Exception e) {
+                mixinFailed(e);
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -64,7 +73,7 @@ public enum LoaderInitializer {
     }
 
     public void finalizeLoading() {
-        synchronized (INSTANCE) {
+        synchronized (this) {
             if (!this.started) {
                 throw new IllegalStateException("Loader hasn't started!");
             }
@@ -97,6 +106,20 @@ public enum LoaderInitializer {
 
     public boolean completedSetup() {
         return finalized;
+    }
+
+    @NotNull
+    ElecModLoader waitForLoader() {
+        synchronized (START_LOCK) {
+            if (!this.started) {
+                try {
+                    START_LOCK.wait(15 * 1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return getModLoader();
     }
 
     @NotNull

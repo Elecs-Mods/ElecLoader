@@ -1,24 +1,35 @@
 package nl.elec332.minecraft.loader.impl;
 
+import com.google.common.collect.HashMultimap;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
+import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
+import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
+import nl.elec332.minecraft.loader.mod.event.ModLoaderEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 
+import java.lang.annotation.ElementType;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by Elec332 on 13-02-2024
  */
 public final class ElecModLoader {
+
+    @NotNull
+    public static ElecModLoader waitForModLoader() {
+        return LoaderInitializer.INSTANCE.waitForLoader();
+    }
 
     @NotNull
     public static ElecModLoader getModLoader() {
@@ -41,13 +52,56 @@ public final class ElecModLoader {
         ((ElecModContainer) modContainer).ownedPackages = Collections.unmodifiableSet(packages);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     ElecModLoader(Function<Type, Set<IAnnotationData>> dataHandler) {
         this.discoveredMods = dataHandler.apply(LoaderConstants.MODANNOTATION).stream()
-                .collect(Collectors.toMap(ad -> (String) ad.getAnnotationInfo().get("value"), IAnnotationData::getClassType, (t1, t2) -> null));
+                .filter(ad -> ad.getTargetType() == ElementType.TYPE)
+                .filter(ad -> {
+                    Object dist = ad.getAnnotationInfo().get("dist");
+                    if (dist == null) {
+                        return true;
+                    }
+                    return ((List<?>) dist).stream()
+                            .map(eh -> Dist.valueOf(((IAnnotationData.EnumHolder) eh).value()))
+                            .anyMatch(d -> d == IModLoader.INSTANCE.getDist());
+                })
+                .collect(Collectors.toMap(ad -> (String) Objects.requireNonNull(ad.getAnnotationInfo().get("value")), ad -> {
+                    var ret = new HashSet<IAnnotationData>();
+                    ret.add(ad);
+                    return ret;
+                }, (o1, o2) -> {
+                    o1.addAll(o2);
+                    return o1;
+                })).entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, s -> {
+                    Set<Type> ret = new LinkedHashSet<>();
+                    s.getValue().stream()
+                            //Make the "most common" (supporting most distributions) entrypoint go first for Forge instance matching
+                            .sorted((o1, o2) -> {
+                                var t1 = (List<?>) o1.getAnnotationInfo().get("dist");
+                                var t2 = (List<?>) o2.getAnnotationInfo().get("dist");
+                                if (Objects.equals(t1, t2)) {
+                                    return 0;
+                                }
+                                if (t1 == null && t2.size() != Dist.values().length) {
+                                    return -1;
+                                }
+                                if (t2 == null && t1.size() != Dist.values().length) {
+                                    return 1;
+                                }
+                                if (t1 != null && t2 != null) {
+                                    return t2.size() - t1.size();
+                                }
+                                return 0;
+                            })
+                            .forEach(ad -> ret.add(ad.getClassType()));
+                    return ret;
+                }));
         this.containers = new HashMap<>();
         this.modIds = Collections.unmodifiableSet(this.discoveredMods.keySet());
         this.logger = LogManager.getLogger("ElecModLoader");
-        ElecModLoaderEventHandler.INSTANCE.containers = () -> {
+        IModLoaderEventHandler.INSTANCE.getClass(); //Force-load service
+        ElecModLoaderEventHandler.INSTANCE.containers = () -> { //TODO remove?
             if (!ElecModLoader.getModLoader().discoveredAllMods()) {
                 throw new IllegalStateException();
             }
@@ -58,7 +112,7 @@ public final class ElecModLoader {
     }
 
     private final Set<String> modIds;
-    private Map<String, Type> discoveredMods;
+    private Map<String, Set<Type>> discoveredMods;
     private final Map<String, ElecModContainer> containers;
     private final Logger logger;
 
@@ -74,10 +128,10 @@ public final class ElecModLoader {
     }
 
     void finalizeLoading() {
-        if (getModLoader().containers.isEmpty() || !getModLoader().discoveredAllMods()) {
+        if (this.containers.isEmpty() || !discoveredAllMods()) {
             throw new IllegalStateException("ModLoader finalization is being called too early!");
         }
-        getModLoader().containers.forEach((name, container) -> {
+        this.containers.forEach((name, container) -> {
             IModContainer mc = IModLoader.INSTANCE.getModContainer(name);
             if (mc == null) {
                 throw new RuntimeException("Failed to load linked mod " + name);
@@ -87,7 +141,7 @@ public final class ElecModLoader {
             }
         });
         Set<String> missing = new HashSet<>();
-        for (String s : this.modIds) {
+        for (String s : getDiscoveredMods()) {
             IModContainer mc = IModLoader.INSTANCE.getModContainer(s);
             if (!(mc instanceof ElecModContainer)) {
                 missing.add(s);
@@ -105,7 +159,12 @@ public final class ElecModLoader {
         return discoveredMods == null;
     }
 
-    public void useDiscoveredMods(BiFunction<IModMetaData, Type, ElecModContainer> factory) {
+    //TODO: Evaluate existence
+    public Collection<String> getDiscoveredMods() {
+        return this.modIds;
+    }
+
+    public void useDiscoveredMods(BiFunction<IModMetaData, Set<Type>, ElecModContainer> factory) {
         synchronized (LoaderConstants.MODANNOTATION) {
             if (discoveredAllMods()) {
                 throw new IllegalStateException();
@@ -126,13 +185,13 @@ public final class ElecModLoader {
         }
     }
 
-    public ElecModContainer useDiscoveredMod(String name, BiFunction<IModMetaData, Type, ElecModContainer> factory) {
+    public ElecModContainer useDiscoveredMod(String name, BiFunction<IModMetaData, Set<Type>, ElecModContainer> factory) {
         synchronized (LoaderConstants.MODANNOTATION) {
             if (discoveredAllMods()) {
                 throw new IllegalStateException();
             }
             ElecModContainer ret;
-            Type type = discoveredMods.get(name);
+            Set<Type> type = discoveredMods.get(name);
             if (type == null) {
                 throw new IllegalArgumentException();
             }
@@ -163,6 +222,11 @@ public final class ElecModLoader {
             throw new IllegalStateException("ModContainer for " + modId + " has already been built!");
         }
         containers.put(modId, modContainer);
+    }
+
+    //TODO: Evaluate existence
+    public Stream<? extends IModContainer> getMods() {
+        return containers.values().stream();
     }
 
     public IModContainer getModContainer(String modId) {

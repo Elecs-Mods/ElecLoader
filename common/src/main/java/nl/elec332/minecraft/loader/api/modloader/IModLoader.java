@@ -70,16 +70,6 @@ public interface IModLoader {
     Set<IModFile> getLibraries();
 
     /**
-     * Enqueues work to be run after the provided {@link ModLoadingStage} has completed.
-     * Useful as mod may be loaded async or in an unpredictable order.
-     *
-     * @param stage The stage the provided worker should run after
-     * @param modContainer The owner of the provided worker
-     * @param runnable The worker to be run after the specified {@link ModLoadingStage}
-     */
-    void enqueueDeferredWork(ModLoadingStage stage, IModContainer modContainer, Runnable runnable);
-
-    /**
      * Checks whether the provided class is marked to not load on the current {@link Dist}.
      *
      * @param clazz The class to be checked
@@ -108,6 +98,13 @@ public interface IModLoader {
      */
     default ClassLoader getModClassLoader() {
         return Thread.currentThread().getContextClassLoader();
+    }
+
+    /**
+     * @return Whether the modloader has errored.
+     */
+    default boolean hasLoaderErrored() {
+        return false;
     }
 
     /**

@@ -4,18 +4,20 @@ import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
-import nl.elec332.minecraft.loader.mod.event.ConstructModEvent;
+import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.*;
+import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.EventListener;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
+import org.objectweb.asm.Type;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -23,22 +25,31 @@ import java.util.stream.Collectors;
  */
 public class ElecModContainer implements IModContainer {
 
-    public ElecModContainer(IModMetaData modMetaData, String className, ClassSupplier classSupplier, BiFunction<Map.Entry<ErrorType, Throwable>, Class<?>, RuntimeException> errorProducer) {
+    public ElecModContainer(IModMetaData modMetaData, Set<Type> entryPoints, ClassSupplier classSupplier, BiFunction<ErrorType, Throwable, RuntimeException> errorProducer, Supplier<BiConsumer<ModLoadingStage, Runnable>> deferredWorkRegistry) {
         this.modMetaData = modMetaData;
         this.eventBus = BusBuilder.builder()
                 .setExceptionHandler(this::onEventFailed)
                 .allowPerPhasePost()
                 .build();
-        eventBus.addListener(EventPriority.HIGHEST, ConstructModEvent.class, e -> constructMod());
-
-        try {
-            modClass = classSupplier.loadModClass(className);
-            LOGGER.trace(LOADING,"Loaded modclass {} with {}", modClass.getName(), modClass.getClassLoader());
-        } catch (Throwable e) {
-            LOGGER.error(LOADING, "Failed to load class {}", className, e);
-            throw errorProducer.apply(Map.entry(ErrorType.CONSTRUCT, e), null);
+        Set<Class<?>> eps = new HashSet<>();
+        if (Objects.requireNonNull(entryPoints).isEmpty()) {
+            throw new IllegalArgumentException("entryPoints is empty");
         }
+        for (Type type : entryPoints) {
+            try {
+                Class<?> modClass = classSupplier.loadModClass(type.getClassName());
+                LOGGER.trace(LOADING,"Loaded modclass {} with {}", modClass.getName(), modClass.getClassLoader());
+                eps.add(modClass);
+            } catch (Throwable e) {
+                LOGGER.error(LOADING, "Failed to load class {}", type.getClassName(), e);
+                throw errorProducer.apply(ErrorType.CONSTRUCT, e);
+            }
+        }
+        this.modClasses = Collections.unmodifiableSet(eps);
+
+
         this.errorProducer = errorProducer;
+        this.deferredWorkRegistry = deferredWorkRegistry;
     }
 
     private static final Logger LOGGER = LogManager.getLogger();
@@ -48,8 +59,9 @@ public class ElecModContainer implements IModContainer {
     Set<String> ownedPackages;
     private final IEventBus eventBus;
     private Object modInstance;
-    private final Class<?> modClass;
-    private final BiFunction<Map.Entry<ErrorType, Throwable>, Class<?>, RuntimeException> errorProducer;
+    private final Collection<Class<?>> modClasses;
+    private final BiFunction<ErrorType, Throwable, RuntimeException> errorProducer;
+    private final Supplier<BiConsumer<ModLoadingStage, Runnable>> deferredWorkRegistry;
 
     @Override
     public final IModMetaData getModMetadata() {
@@ -61,72 +73,90 @@ public class ElecModContainer implements IModContainer {
         return this.ownedPackages;
     }
 
+    public Object getFirstModInstance() {
+        return modInstance;
+    }
+
     private void onEventFailed(IEventBus iEventBus, Event event, EventListener[] iEventListeners, int i, Throwable throwable) {
         throw new RuntimeException("Failed to fire event " + event.getClass() + " to mod \"" + this.getModId() + "\"", throwable);
     }
 
-    private void constructMod() {
+    public final void constructMod() {
+        if (this.modInstance != null) {
+            throw new IllegalStateException("Mod already constructed");
+        }
         synchronized (ElecModContainer.class) {
             if (!LoaderInitializer.INSTANCE.completedModList()) {
                 LoaderInitializer.INSTANCE.finalizeLoading();
             }
         }
-        try {
-            LOGGER.trace(LOADING, "Loading mod instance {} of type {}", getModId(), modClass.getName());
+        for (Class<?> modClass : this.modClasses) {
+            try {
+                LOGGER.trace(LOADING, "Loading mod instance {} of type {}", getModId(), modClass.getName());
 
-            var constructors = modClass.getConstructors();
-            if (constructors.length != 1) {
-                throw new RuntimeException("Mod class must have exactly 1 public constructor, found " + constructors.length);
-            }
-            var constructor = constructors[0];
+                var constructors = modClass.getConstructors();
+                if (constructors.length != 1) {
+                    throw new RuntimeException("Mod class must have exactly 1 public constructor, found " + constructors.length);
+                }
+                var constructor = constructors[0];
 
-            // Allowed arguments for injection via constructor
-            Map<Class<?>, Object> allowedConstructorArgs = Map.of(
-                    IEventBus.class, eventBus,
-                    IModContainer.class, this,
-                    Dist.class, IModLoader.INSTANCE.getDist());
+                // Allowed arguments for injection via constructor
+                Map<Class<?>, Object> allowedConstructorArgs = Map.of(
+                        IEventBus.class, eventBus,
+                        IModContainer.class, this,
+                        Dist.class, IModLoader.INSTANCE.getDist());
 
-            var parameterTypes = constructor.getParameterTypes();
-            Object[] constructorArgs = new Object[parameterTypes.length];
-            Set<Class<?>> foundArgs = new HashSet<>();
+                var parameterTypes = constructor.getParameterTypes();
+                Object[] constructorArgs = new Object[parameterTypes.length];
+                Set<Class<?>> foundArgs = new HashSet<>();
 
-            for (int i = 0; i < parameterTypes.length; i++) {
-                Object argInstance = allowedConstructorArgs.get(parameterTypes[i]);
-                if (argInstance == null) {
-                    throw new RuntimeException("Mod constructor has unsupported argument " + parameterTypes[i] + ". Allowed optional argument classes: " + allowedConstructorArgs.keySet().stream().map(Class::getSimpleName).collect(Collectors.joining(", ")));
+                for (int i = 0; i < parameterTypes.length; i++) {
+                    Object argInstance = allowedConstructorArgs.get(parameterTypes[i]);
+                    if (argInstance == null) {
+                        throw new RuntimeException("Mod constructor has unsupported argument " + parameterTypes[i] + ". Allowed optional argument classes: " + allowedConstructorArgs.keySet().stream().map(Class::getSimpleName).collect(Collectors.joining(", ")));
+                    }
+
+                    if (foundArgs.contains(parameterTypes[i])) {
+                        throw new RuntimeException("Duplicate mod constructor argument type: " + parameterTypes[i]);
+                    }
+
+                    foundArgs.add(parameterTypes[i]);
+                    constructorArgs[i] = argInstance;
                 }
 
-                if (foundArgs.contains(parameterTypes[i])) {
-                    throw new RuntimeException("Duplicate mod constructor argument type: " + parameterTypes[i]);
+                // All arguments are found
+                Object instance = constructor.newInstance(constructorArgs);
+                if (this.modInstance == null) {
+                    this.modInstance = instance;
                 }
 
-                foundArgs.add(parameterTypes[i]);
-                constructorArgs[i] = argInstance;
+                LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
+            } catch (Throwable e) {
+                if (e instanceof InvocationTargetException) {
+                    e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
+                }
+                LOGGER.error(LOADING,"Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
+                throw errorProducer.apply(ErrorType.CONSTRUCT, e);
             }
-
-            // All arguments are found
-            this.modInstance = constructor.newInstance(constructorArgs);
-
-            LOGGER.trace(LOADING, "Loaded mod instance {} of type {}", getModId(), modClass.getName());
-        } catch (Throwable e) {
-            if (e instanceof InvocationTargetException) {
-                e = e.getCause(); // exceptions thrown when a reflected method call throws are wrapped in an InvocationTargetException. However, this isn't useful for the end user who has to dig through the logs to find the actual cause.
-            }
-            LOGGER.error(LOADING,"Failed to create mod instance. ModID: {}, class {}", getModId(), modClass.getName(), e);
-            throw errorProducer.apply(Map.entry(ErrorType.CONSTRUCT, e), modClass);
         }
-    }
-
-    public final boolean matches(Object mod) {
-        return mod == modInstance;
-    }
-
-    public final Object getMod() {
-        return modInstance;
     }
 
     public final IEventBus getEventBus() {
         return this.eventBus;
+    }
+
+    /**
+     * Enqueues work to be run after the provided {@link ModLoadingStage} has completed.
+     * Useful as mod may be loaded async or in an unpredictable order.
+     *
+     * @param stage The stage the provided worker should run aftermc
+     * @param runnable The worker to be run after the specified {@link ModLoadingStage}
+     */
+    public final void enqueueDeferredWork(ModLoadingStage stage, Runnable runnable) {
+        if (stage == ModLoadingStage.PRE_CONSTRUCT) {
+            throw new UnsupportedOperationException();
+        }
+        this.deferredWorkRegistry.get().accept(stage, runnable);
     }
 
     public interface ClassSupplier {

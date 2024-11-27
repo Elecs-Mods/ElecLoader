@@ -25,7 +25,7 @@ compileModImplJava {
 
 [jar, devJar].each {j ->
     j.manifest {
-        attributes(["FMLModType": "LANGPROVIDER"])
+        attributes(["FMLModType": "LIBRARY"])
     }
 }
 

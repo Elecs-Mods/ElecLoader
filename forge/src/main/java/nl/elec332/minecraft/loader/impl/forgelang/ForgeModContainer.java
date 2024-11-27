@@ -5,7 +5,6 @@ import net.minecraftforge.fml.ModLoadingException;
 import net.minecraftforge.fml.ModLoadingStage;
 import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.language.ModFileScanData;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.service.ModServiceLoader;
 import nl.elec332.minecraft.loader.impl.ElecModContainer;
@@ -19,6 +18,8 @@ import org.apache.logging.log4j.MarkerManager;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 /**
@@ -26,16 +27,21 @@ import java.util.function.BiFunction;
  */
 public final class ForgeModContainer extends ModContainer {
 
-    public ForgeModContainer(IModInfo info, String className, ModFileScanData modFileScanResults, ModuleLayer gameLayer) {
+    public ForgeModContainer(IModInfo info, ModuleLayer gameLayer) {
         super(info);
-        contextExtension = () -> null;
+        this.contextExtension = () -> null;
+        BiConsumer<nl.elec332.minecraft.loader.api.modloader.ModLoadingStage, Runnable> defq = (stage, runnable) -> {
+            net.minecraftforge.fml.ModLoadingStage mls = net.minecraftforge.fml.ModLoadingStage.values()[stage.ordinal() + 1];
+            mls.getDeferredWorkQueue().enqueueWork(this, runnable);
+        };
 
-        elecModContainer = ElecModLoader.getModLoader().useDiscoveredMod(info.getModId(), (meta, type) -> {
-            return new ElecModContainer(meta, className, name -> {
-                var layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
-                return Class.forName(layer, className);
-            }, (e, c) -> new ModLoadingException(info, ModLoadingStage.CONSTRUCT, e.getKey() == ElecModContainer.ErrorType.CLASSLOAD ? "fml.modloading.failedtoloadmodclass" : "fml.modloading.failedtoloadmod", e.getValue(), c));
-        });
+        this.elecModContainer = ElecModLoader.getModLoader().useDiscoveredMod(info.getModId(), (meta, types) -> new ElecModContainer(meta, types, name -> {
+            var layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
+            return Class.forName(layer, name);
+        }, (e, t) -> new ModLoadingException(info, ModLoadingStage.CONSTRUCT, e == ElecModContainer.ErrorType.CLASSLOAD ? "fml.modloading.failedtoloadmodclass" : "fml.modloading.failedtoloadmod", t, "<>"),
+                () -> defq));
+
+        this.activityMap.put(ModLoadingStage.CONSTRUCT, this.elecModContainer::constructMod);
     }
 
     private static final Logger LOGGER = LogManager.getLogger();
@@ -44,12 +50,12 @@ public final class ForgeModContainer extends ModContainer {
 
     @Override
     public boolean matches(Object mod) {
-        return elecModContainer.matches(mod);
+        return Objects.equals(elecModContainer.getFirstModInstance(), mod);
     }
 
     @Override
     public Object getMod() {
-        return elecModContainer.getMod();
+        return elecModContainer.getFirstModInstance();
     }
 
     @Override

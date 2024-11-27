@@ -9,15 +9,11 @@ import nl.elec332.minecraft.loader.abstraction.PathModFile;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
-import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
-import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.impl.LoaderConstants;
 
 import java.net.URLClassLoader;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -104,28 +100,6 @@ public abstract class AbstractFabricBasedModLoader<T> extends AbstractModLoader<
             }
         }
         return false;
-    }
-
-    static final Map<ModLoadingStage, ConcurrentLinkedDeque<Map.Entry<IModContainer, Runnable>>> DEFERRED_WORK_QUEUE = new ConcurrentHashMap<>();
-
-    @Override
-    public void enqueueDeferredWork(ModLoadingStage stage, IModContainer modContainer, Runnable runnable) {
-        if (stage == ModLoadingStage.PRE_CONSTRUCT) {
-            throw new UnsupportedOperationException();
-        }
-        if (!DEFERRED_WORK_QUEUE.containsKey(stage)) {
-            throw new IllegalArgumentException("Invalid stage: " + stage.getName());
-        }
-        DEFERRED_WORK_QUEUE.get(stage).add(Map.entry(modContainer, runnable));
-    }
-
-    static {
-        Arrays.stream(ModLoadingStage.values()).forEach(stage -> {
-            if (stage == ModLoadingStage.PRE_CONSTRUCT) {
-                return;
-            }
-            DEFERRED_WORK_QUEUE.put(stage, new ConcurrentLinkedDeque<>());
-        });
     }
 
 }

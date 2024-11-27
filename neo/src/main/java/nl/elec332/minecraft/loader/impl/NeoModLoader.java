@@ -2,6 +2,7 @@ package nl.elec332.minecraft.loader.impl;
 
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.ModLoader;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
@@ -37,7 +38,7 @@ final class NeoModLoader extends AbstractModLoader<ModInfo> {
 
             @Override
             public void scanFile(Consumer<Path> consumer) {
-                this.mf.getProvider().scanFile(this.mf, consumer);
+                this.mf.scanFile(consumer);
             }
 
             @Override
@@ -154,15 +155,6 @@ final class NeoModLoader extends AbstractModLoader<ModInfo> {
     }
 
     @Override
-    public void enqueueDeferredWork(ModLoadingStage stage, IModContainer modContainer, Runnable runnable) {
-        if (stage == ModLoadingStage.PRE_CONSTRUCT) {
-            throw new UnsupportedOperationException();
-        }
-        net.neoforged.fml.ModLoadingStage mls = net.neoforged.fml.ModLoadingStage.values()[stage.ordinal() + 1];
-        mls.getDeferredWorkQueue().enqueueWork(ModList.get().getModContainerById(modContainer.getModId()).get(), runnable);
-    }
-
-    @Override
     public boolean hasWrongSideOnly(String clazz, IAnnotationDataHandler annotationData) {
         if (super.hasWrongSideOnly(clazz, annotationData)) {
             return true;
@@ -183,6 +175,11 @@ final class NeoModLoader extends AbstractModLoader<ModInfo> {
     @Override
     public Dist getDist() {
         return FMLLoader.getDist().isClient() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
+    }
+
+    @Override
+    public boolean hasLoaderErrored() {
+        return !ModLoader.isLoadingStateValid();
     }
 
 }

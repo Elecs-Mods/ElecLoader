@@ -14,6 +14,7 @@ import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 
+import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -314,7 +315,7 @@ enum AnnotationDataHandler {
     void process(ModLoadingStage state) {
         if (validStates.contains(state)) {
             Multimap<IModContainer, IAnnotationDataProcessor> dataProcessors = asmLoaderMap.get(state);
-            dataProcessors.forEach((mc, dataProcessor) -> IModLoaderEventHandler.INSTANCE.enqueueDeferredWork(state, mc, () -> dataProcessor.processASMData(asmDataHelper, state)));
+            dataProcessors.forEach((mc, dataProcessor) -> ((ElecModContainer) mc).enqueueDeferredWork(state, () -> dataProcessor.processASMData(asmDataHelper, state)));
             asmLoaderMap.remove(state);
         } else {
             throw new IllegalArgumentException();
@@ -356,6 +357,11 @@ enum AnnotationDataHandler {
         @Override
         public Type getAnnotationType() {
             return asmData.annotationType();
+        }
+
+        @Override
+        public ElementType getTargetType() {
+            return asmData.targetType();
         }
 
         @Override

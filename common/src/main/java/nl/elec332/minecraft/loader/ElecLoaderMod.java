@@ -2,6 +2,7 @@ package nl.elec332.minecraft.loader;
 
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
+import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import nl.elec332.minecraft.loader.impl.LoaderInitializer;
 import nl.elec332.minecraft.loader.mod.Mod;
@@ -33,6 +34,8 @@ public class ElecLoaderMod {
     public static final String MODID = "elecloader";
     public static final Logger LOGGER = LogManager.getLogger();
 
+    private ModLoadingStage lastStage = ModLoadingStage.PRE_CONSTRUCT;
+
     public void onConstruct(ConstructModEvent event) {
         processAnnotations(event);
     }
@@ -62,7 +65,21 @@ public class ElecLoaderMod {
     }
 
     private void processAnnotations(final ModLoaderEvent event) {
-        event.enqueueDeferredWork(() -> ElecModLoader.getModLoader().processAnnotations(event.getLoadingStage()));
+        checkStage(event);
+        event.enqueueDeferredWork(() -> {
+            ElecModLoader.getModLoader().processAnnotations(event.getLoadingStage());
+            checkStage(event);
+            this.lastStage = event.getLoadingStage();
+            if (event.getLoadingStage() == ModLoadingStage.values()[ModLoadingStage.values().length - 1]) {
+                LOGGER.info("Successfully processed all annotations.");
+            }
+        });
+    }
+
+    private void checkStage(final ModLoaderEvent event) {
+        if (this.lastStage != ModLoadingStage.values()[event.getLoadingStage().ordinal() - 1]) {
+            throw new RuntimeException("Detected a failure processing annotations in stage " + ModLoadingStage.values()[event.getLoadingStage().ordinal() - 1]);
+        }
     }
 
 }
