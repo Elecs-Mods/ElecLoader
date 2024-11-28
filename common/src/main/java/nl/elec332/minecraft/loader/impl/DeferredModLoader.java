@@ -137,4 +137,14 @@ public final class DeferredModLoader implements IModLoader {
         return realModLoader.getUnownedPackages();
     }
 
+    @Override
+    public ClassLoader getModClassLoader() {
+        return realModLoader.getModClassLoader();
+    }
+
+    @Override
+    public boolean hasLoaderErrored() {
+        return realModLoader.hasLoaderErrored();
+    }
+
 }

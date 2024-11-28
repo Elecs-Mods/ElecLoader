@@ -4,6 +4,7 @@ import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import net.neoforged.fml.Logging;
 import net.neoforged.fml.ModLoadingException;
 import net.neoforged.fml.ModLoadingStage;
+import net.neoforged.neoforgespi.language.IModFileInfo;
 import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.neoforgespi.language.IModLanguageProvider;
 import net.neoforged.neoforgespi.language.ModFileScanData;
@@ -14,6 +15,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -31,7 +34,17 @@ public class NeoLanguageLoader implements IModLanguageProvider {
 
     @Override
     public Consumer<ModFileScanData> getFileVisitor() {
-        return scanResult -> scanResult.addLanguageLoader(ElecModLoader.waitForModLoader().getDiscoveredMods().stream().collect(Collectors.toMap(Function.identity(), s -> new ModTarget())));
+        return scanResult -> {
+            Set<String> mods = scanResult.getIModInfoData().stream()
+                    .map(IModFileInfo::getMods)
+                    .flatMap(List::stream)
+                    .map(IModInfo::getModId)
+                    .collect(Collectors.toSet());
+            scanResult.addLanguageLoader(ElecModLoader.waitForModLoader().getDiscoveredMods().stream()
+                    .filter(mods::contains)
+                    .collect(Collectors.toMap(Function.identity(), s -> new ModTarget()))
+            );
+        };
     }
 
     private static class ModTarget implements IModLanguageLoader {

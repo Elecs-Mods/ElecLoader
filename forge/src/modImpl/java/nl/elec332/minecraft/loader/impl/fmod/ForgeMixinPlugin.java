@@ -26,7 +26,7 @@ public final class ForgeMixinPlugin implements IMixinConfigPlugin {
                         .flatMap(cfg -> {
                             try {
                                 //Use string-array for <1.19.2 support
-                                return cfg.getConfigList(new String[]{"forgemixins"}).stream().map(e -> (String) e.getConfigElement("config").get());
+                                return cfg.getConfigList(new String[]{"forgemixins"}).stream().map(e -> (String) e.getConfigElement(new String[]{"config"}).get());
                             } catch (Exception e) {
                                 return Stream.empty();
                             }

@@ -4,10 +4,7 @@ import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import net.minecraftforge.fml.Logging;
 import net.minecraftforge.fml.ModLoadingException;
 import net.minecraftforge.fml.ModLoadingStage;
-import net.minecraftforge.forgespi.language.ILifecycleEvent;
-import net.minecraftforge.forgespi.language.IModInfo;
-import net.minecraftforge.forgespi.language.IModLanguageProvider;
-import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.minecraftforge.forgespi.language.*;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import nl.elec332.minecraft.loader.impl.LoaderConstants;
 import org.apache.logging.log4j.LogManager;
@@ -15,6 +12,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -34,7 +33,17 @@ public class ForgeLanguageLoader implements IModLanguageProvider {
 
     @Override
     public Consumer<ModFileScanData> getFileVisitor() {
-        return scanResult -> scanResult.addLanguageLoader(ElecModLoader.waitForModLoader().getDiscoveredMods().stream().collect(Collectors.toMap(Function.identity(), s -> new ModTarget())));
+        return scanResult -> {
+            Set<String> mods = scanResult.getIModInfoData().stream()
+                    .map(IModFileInfo::getMods)
+                    .flatMap(List::stream)
+                    .map(IModInfo::getModId)
+                    .collect(Collectors.toSet());
+            scanResult.addLanguageLoader(ElecModLoader.waitForModLoader().getDiscoveredMods().stream()
+                    .filter(mods::contains)
+                    .collect(Collectors.toMap(Function.identity(), s -> new ModTarget()))
+            );
+        };
     }
 
     @Override
