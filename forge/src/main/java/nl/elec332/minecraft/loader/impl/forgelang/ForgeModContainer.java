@@ -7,6 +7,7 @@ import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.forgespi.language.IModInfo;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.service.ModServiceLoader;
+import nl.elec332.minecraft.loader.impl.DeferredWorkQueue;
 import nl.elec332.minecraft.loader.impl.ElecModContainer;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import nl.elec332.minecraft.loader.mod.event.mapping.IModEventMapper;
@@ -16,10 +17,10 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 /**
@@ -30,16 +31,17 @@ public final class ForgeModContainer extends ModContainer {
     public ForgeModContainer(IModInfo info, ModuleLayer gameLayer) {
         super(info);
         this.contextExtension = () -> null;
-        BiConsumer<nl.elec332.minecraft.loader.api.modloader.ModLoadingStage, Runnable> defq = (stage, runnable) -> {
+        this.workQueue = new DeferredWorkQueue<>();
+        Arrays.stream(nl.elec332.minecraft.loader.api.modloader.ModLoadingStage.values()).forEach(stage -> {
             net.minecraftforge.fml.ModLoadingStage mls = net.minecraftforge.fml.ModLoadingStage.values()[stage.ordinal() + 1];
-            mls.getDeferredWorkQueue().enqueueWork(this, runnable);
-        };
+            mls.getDeferredWorkQueue().enqueueWork(this, () -> this.workQueue.processQueue(stage, Runnable::run));
+        });
 
         this.elecModContainer = ElecModLoader.getModLoader().useDiscoveredMod(info.getModId(), (meta, types) -> new ElecModContainer(meta, types, name -> {
             var layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
             return Class.forName(layer, name);
         }, (e, t) -> new ModLoadingException(info, ModLoadingStage.CONSTRUCT, e == ElecModContainer.ErrorType.CLASSLOAD ? "fml.modloading.failedtoloadmodclass" : "fml.modloading.failedtoloadmod", t, "<>"),
-                () -> defq));
+                () -> this.workQueue::enqueueDeferredWork));
 
         this.activityMap.put(ModLoadingStage.CONSTRUCT, this.elecModContainer::constructMod);
     }
@@ -47,6 +49,7 @@ public final class ForgeModContainer extends ModContainer {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Marker LOADING = MarkerManager.getMarker("LOADING");
     public final ElecModContainer elecModContainer;
+    private final DeferredWorkQueue<Runnable> workQueue;
 
     @Override
     public boolean matches(Object mod) {

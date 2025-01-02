@@ -49,7 +49,7 @@ public interface IAnnotationData {
      * @see IAnnotationData#getClassType()
      */
     default String getClassName() {
-        return getClassType().toString();
+        return getClassType().getClassName();
     }
 
 

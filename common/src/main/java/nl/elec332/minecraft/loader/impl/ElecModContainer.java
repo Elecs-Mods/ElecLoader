@@ -5,6 +5,7 @@ import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
+import nl.elec332.minecraft.loader.util.DynamicClassInstantiator;
 import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.*;
 import nl.elec332.minecraft.repackaged.net.neoforged.bus.api.EventListener;
 import org.apache.logging.log4j.LogManager;
@@ -18,7 +19,6 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Created by Elec332 on 05-02-2024
@@ -90,42 +90,18 @@ public class ElecModContainer implements IModContainer {
                 LoaderInitializer.INSTANCE.finalizeLoading();
             }
         }
+
+        // Allowed arguments for injection via constructor
+        Map<Class<?>, Object> allowedConstructorArgs = Map.of(
+                IEventBus.class, eventBus,
+                IModContainer.class, this,
+                Dist.class, IModLoader.INSTANCE.getDist());
+
         for (Class<?> modClass : this.modClasses) {
             try {
                 LOGGER.trace(LOADING, "Loading mod instance {} of type {}", getModId(), modClass.getName());
 
-                var constructors = modClass.getConstructors();
-                if (constructors.length != 1) {
-                    throw new RuntimeException("Mod class must have exactly 1 public constructor, found " + constructors.length);
-                }
-                var constructor = constructors[0];
-
-                // Allowed arguments for injection via constructor
-                Map<Class<?>, Object> allowedConstructorArgs = Map.of(
-                        IEventBus.class, eventBus,
-                        IModContainer.class, this,
-                        Dist.class, IModLoader.INSTANCE.getDist());
-
-                var parameterTypes = constructor.getParameterTypes();
-                Object[] constructorArgs = new Object[parameterTypes.length];
-                Set<Class<?>> foundArgs = new HashSet<>();
-
-                for (int i = 0; i < parameterTypes.length; i++) {
-                    Object argInstance = allowedConstructorArgs.get(parameterTypes[i]);
-                    if (argInstance == null) {
-                        throw new RuntimeException("Mod constructor has unsupported argument " + parameterTypes[i] + ". Allowed optional argument classes: " + allowedConstructorArgs.keySet().stream().map(Class::getSimpleName).collect(Collectors.joining(", ")));
-                    }
-
-                    if (foundArgs.contains(parameterTypes[i])) {
-                        throw new RuntimeException("Duplicate mod constructor argument type: " + parameterTypes[i]);
-                    }
-
-                    foundArgs.add(parameterTypes[i]);
-                    constructorArgs[i] = argInstance;
-                }
-
-                // All arguments are found
-                Object instance = constructor.newInstance(constructorArgs);
+                Object instance = DynamicClassInstantiator.newInstance(modClass, allowedConstructorArgs);
                 if (this.modInstance == null) {
                     this.modInstance = instance;
                 }
