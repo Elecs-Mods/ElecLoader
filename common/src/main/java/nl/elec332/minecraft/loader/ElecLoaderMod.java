@@ -66,14 +66,11 @@ public class ElecLoaderMod {
 
     private void processAnnotations(final ModLoaderEvent event) {
         checkStage(event);
-        event.enqueueDeferredWork(() -> {
-            ElecModLoader.getModLoader().processAnnotations(event.getLoadingStage());
-            checkStage(event);
-            this.lastStage = event.getLoadingStage();
-            if (event.getLoadingStage() == ModLoadingStage.values()[ModLoadingStage.values().length - 1]) {
-                LOGGER.info("Successfully processed all annotations.");
-            }
-        });
+        ElecModLoader.getModLoader().processAnnotations(event.getLoadingStage());
+        this.lastStage = event.getLoadingStage();
+        if (event.getLoadingStage() == ModLoadingStage.values()[ModLoadingStage.values().length - 1]) {
+            LOGGER.info("Successfully processed all annotations.");
+        }
     }
 
     private void checkStage(final ModLoaderEvent event) {
