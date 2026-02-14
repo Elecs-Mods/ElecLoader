@@ -7,6 +7,7 @@ import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.*;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,7 +24,7 @@ public final class DeferredModLoader implements IModLoader {
         if (INSTANCE != null) {
             throw new IllegalStateException();
         }
-        Set<Object> loaded = Stream.of("NeoModLoader", "ForgeModLoader", "FabricModLoader", "QuiltModLoader")
+        Set<Object> loaded = Stream.of("NeoModLoader", "Neo20ModLoader", "ForgeModLoader", "FabricModLoader", "QuiltModLoader")
                 .map(s -> {
                     try {
                         return Class.forName(LoaderConstants.PACKAGE_ROOT + ".impl." + s).getConstructor().newInstance();
@@ -34,6 +35,12 @@ public final class DeferredModLoader implements IModLoader {
                             if (cn.equals("java.lang.NoClassDefFoundError")) {
                                 String message = e.getMessage();
                                 if (message.startsWith("net/minecraftforge") || message.startsWith("net/neoforged") || message.startsWith("net/fabricmc") || message.startsWith("org/quiltmc")) {
+                                    return null;
+                                }
+                            }
+                            if (cn.equals("java.lang.IncompatibleClassChangeError") || cn.equals("java.lang.NoSuchMethodError")) {
+                                String message = e.getMessage();
+                                if (message.contains("net.minecraftforge") || message.contains("net.neoforged") || message.contains("net.fabricmc") || message.contains("org.quiltmc")) {
                                     return null;
                                 }
                             }
@@ -55,7 +62,7 @@ public final class DeferredModLoader implements IModLoader {
                 .collect(Collectors.toSet());
 
         if (loaded.size() != 1) {
-            throw new RuntimeException("Failed to properly load modloader!");
+            throw new RuntimeException("Failed to properly load modloader! (Found " + loaded.size() + ")");
         }
         realModLoader = (AbstractModLoader<?>) loaded.iterator().next();
         if (realModLoader.getModMetaData(ElecLoaderMod.MODID) == null && !hasLoaderErrored()) {
@@ -135,6 +142,16 @@ public final class DeferredModLoader implements IModLoader {
     @Override
     public Set<String> getUnownedPackages() {
         return realModLoader.getUnownedPackages();
+    }
+
+    @Override
+    public Path getGameDir() {
+        return realModLoader.getGameDir();
+    }
+
+    @Override
+    public Path getConfigDir() {
+        return realModLoader.getConfigDir();
     }
 
     @Override

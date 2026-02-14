@@ -10,7 +10,6 @@ import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
-import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 

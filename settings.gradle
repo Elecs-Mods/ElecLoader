@@ -1,6 +1,12 @@
+buildscript { // Some dep issues somewhere, Fabric Loom gets pissy with an older version
+    dependencies {
+        classpath 'com.google.code.gson:gson:2.10.1'
+    }
+}
+
 plugins {
-    id "org.gradle.toolchains.foojay-resolver-convention" version "0.8.0"
-    id "nl.elec332.gradle.minecraft.moddev" version "1.1.2"
+    id "org.gradle.toolchains.foojay-resolver-convention" version "1.0.0"
+    id "nl.elec332.gradle.minecraft.moddev" version "1.2.1"
 }
 
 include("repackaged")
@@ -13,4 +19,5 @@ moddev {
 //    enableQuilt() //Besides it tracking users, you cant even disable a fabric mod from being loaded by config. Disabled until they get their shit together
 
     useBuildNumber = true
+    javaVersion = 17
 }

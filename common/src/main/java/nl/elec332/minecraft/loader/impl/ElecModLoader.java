@@ -1,6 +1,5 @@
 package nl.elec332.minecraft.loader.impl;
 
-import com.google.common.collect.HashMultimap;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.IModContainer;
@@ -8,7 +7,6 @@ import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
 import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
-import nl.elec332.minecraft.loader.mod.event.ModLoaderEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;

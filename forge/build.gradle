@@ -10,6 +10,7 @@ modloader {
     mixin {
         generateOnly = true
         plugin = "nl.elec332.minecraft.loader.impl.fmod.ForgeMixinPlugin"
+        compatibilityLevel = JavaVersion.VERSION_17
     }
 
     addMixinsToManifest = false

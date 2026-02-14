@@ -9,6 +9,7 @@ import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
  * (Defined in {@link AnnotationDataProcessor} and given as an argument in {@link IAnnotationDataProcessor#processASMData(IAnnotationDataHandler, ModLoadingStage)})
  * in the mod lifecycle
  */
+@FunctionalInterface
 public interface IAnnotationDataProcessor {
 
     /**

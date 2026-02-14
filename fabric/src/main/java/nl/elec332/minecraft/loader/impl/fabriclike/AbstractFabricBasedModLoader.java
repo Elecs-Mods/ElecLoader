@@ -13,6 +13,7 @@ import nl.elec332.minecraft.loader.api.modloader.IModFile;
 import nl.elec332.minecraft.loader.impl.LoaderConstants;
 
 import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -100,6 +101,16 @@ public abstract class AbstractFabricBasedModLoader<T> extends AbstractModLoader<
             }
         }
         return false;
+    }
+
+    @Override
+    public Path getGameDir() {
+        return FabricLoader.getInstance().getGameDir();
+    }
+
+    @Override
+    public Path getConfigDir() {
+        return FabricLoader.getInstance().getConfigDir();
     }
 
 }

@@ -95,7 +95,7 @@ subprojects {
     sourceSets {
 
         modRun {
-            java.setSrcDirs([])
+            java.setSrcDirs([project.layout.buildDirectory.get().dir("tmp/modRunSrc").asFile])
             resources.setSrcDirs([])
             runtimeClasspath += rootProject.tasks.devJar.outputs.files
         }

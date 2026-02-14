@@ -5,6 +5,7 @@ import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.service.ModServiceLoader;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.Set;
 
 /**
@@ -92,6 +93,10 @@ public interface IModLoader {
      * @return A collection of packages for which no owner could be identified
      */
     Set<String> getUnownedPackages();
+
+    Path getGameDir();
+
+    Path getConfigDir();
 
     /**
      * @return The mod classloader

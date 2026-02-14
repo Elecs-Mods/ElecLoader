@@ -24,9 +24,10 @@ public final class ForgeMixinPlugin implements IMixinConfigPlugin {
                 LoadingModList.get().getMods().stream()
                         .map(m -> m.getOwningFile().getConfig())
                         .flatMap(cfg -> {
+                            String entry = IModLoader.INSTANCE.getMappingTarget() == MappingType.NAMED ? "named_forgemixins" : "forgemixins";
                             try {
                                 //Use string-array for <1.19.2 support
-                                return cfg.getConfigList(new String[]{"forgemixins"}).stream().map(e -> (String) e.getConfigElement(new String[]{"config"}).get());
+                                return cfg.getConfigList(new String[]{entry}).stream().map(e -> (String) e.getConfigElement(new String[]{"config"}).get());
                             } catch (Exception e) {
                                 return Stream.empty();
                             }

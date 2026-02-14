@@ -11,7 +11,6 @@ import nl.elec332.minecraft.repackaged.net.neoforged.srgutils.IMappingFile;
 import nl.elec332.minecraft.repackaged.net.neoforged.srgutils.INamedMappingFile;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.Remapper;
@@ -183,13 +182,6 @@ final class MappingTransformer implements IClassTransformer {
             for (Field f : ClassNode.class.getDeclaredFields()) {
                 f.set(classNode, f.get(clone));
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            ClassWriter cw = new ClassWriter( 0);
-            classNode.accept(cw);
-            Files.write(Path.of("D:/Downloads/test.class"), cw.toByteArray());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

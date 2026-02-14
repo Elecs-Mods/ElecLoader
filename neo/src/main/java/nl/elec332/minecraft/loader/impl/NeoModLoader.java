@@ -190,4 +190,14 @@ final class NeoModLoader extends AbstractModLoader<ModInfo> {
         }
     }
 
+    @Override
+    public Path getGameDir() {
+        return net.neoforged.fml.loading.FMLPaths.GAMEDIR.get();
+    }
+
+    @Override
+    public Path getConfigDir() {
+        return net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get();
+    }
+
 }
