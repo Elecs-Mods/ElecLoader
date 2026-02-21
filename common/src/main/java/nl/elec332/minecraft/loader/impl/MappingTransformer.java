@@ -1,6 +1,7 @@
 package nl.elec332.minecraft.loader.impl;
 
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
+import nl.elec332.minecraft.loader.api.modloader.IModFileResource;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.MappingType;
 import nl.elec332.minecraft.loader.api.service.ModServiceLoader;
@@ -19,8 +20,6 @@ import org.spongepowered.asm.mixin.Mixin;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -42,12 +41,12 @@ final class MappingTransformer implements IClassTransformer {
         MappingType runtime = IModLoader.INSTANCE.isDevelopmentEnvironment() ? MappingType.NAMED : loaderTarget;
         Set<IMappingProvider> mappers = ModServiceLoader.loadModService(ServiceLoader.load(IMappingProvider.class, IMappingProvider.class.getClassLoader()));
         IModLoader.INSTANCE.getModFiles().forEach(f -> {
-            Optional<Path> mff = f.findPath(JarFile.MANIFEST_NAME);
+            Optional<IModFileResource> mff = f.findResource(JarFile.MANIFEST_NAME);
             MappingType type;
             boolean hasMixedMappings;
 
             if (mff.isPresent()) {
-                try (InputStream is = Files.newInputStream(mff.get())) {
+                try (InputStream is = mff.get().open()) {
                     Manifest mf = new Manifest(is);
                     String value = mf.getMainAttributes().getValue(MAPPINGS);
                     type = MappingType.fromString(value);
@@ -111,14 +110,14 @@ final class MappingTransformer implements IClassTransformer {
 
             }));
             if (type == null && mappings.isEmpty()) {
-                LOGGER.debug("Skipping remapping for file " + f + " as it doesn't contain remapping information");
+                LOGGER.debug("Skipping remapping for file {} as it doesn't contain remapping information", f);
                 return;
             }
             if (hasMixedMappings && IModLoader.INSTANCE.isDevelopmentEnvironment() && loaderTarget != MappingType.NAMED) {
-                LOGGER.warn("File " + f + " was compiled with mixed mappings. Unless this file was otherwise deobfed it is unlikely to work.");
+                LOGGER.warn("File {} was compiled with mixed mappings. Unless this file was otherwise deobfed it is unlikely to work.", f);
             }
             if (fileType == runtime) {
-                LOGGER.debug("Skipping remapping for file " + f + " as it's compiled mapping matches the runtime mapping");
+                LOGGER.debug("Skipping remapping for file {} as it's compiled mapping matches the runtime mapping", f);
                 return;
             }
             if (fileType == MappingType.NAMED && mappings.isEmpty()) {
@@ -134,7 +133,7 @@ final class MappingTransformer implements IClassTransformer {
                 });
             }
             registry.accept(new MappingTransformer(target, fileType, runtime, remapTargets));
-            LOGGER.debug("Registered remapper for file:" + f);
+            LOGGER.debug("Registered remapper for file: {}", f);
         });
     }
 
@@ -157,7 +156,7 @@ final class MappingTransformer implements IClassTransformer {
 
     @Override
     public String getName() {
-        return "MappingTransformer_" + source + "_to_" + target + "_" + targets.hashCode();
+        return "mappingtransformer_" + source.toString().toLowerCase(Locale.ROOT) + "_to_" + target.toString().toLowerCase(Locale.ROOT) + "_" + targets.hashCode();
     }
 
     @Override

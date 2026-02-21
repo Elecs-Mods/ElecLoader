@@ -62,7 +62,7 @@ public final class ForgeModContainer extends ModContainer {
     }
 
     @Override
-    protected <T extends net.minecraftforge.eventbus.api.Event & IModBusEvent> void acceptEvent(final T e) {
+    protected <T extends IModBusEvent> void acceptEvent(final T e) {
         try {
             LOGGER.trace(LOADING, "Firing event for modid {} : {}", this.getModId(), e);
             BiFunction<Object, IModContainer, ? extends Event> mapper = EVENT_MAP.get(e.getClass());
@@ -76,7 +76,7 @@ public final class ForgeModContainer extends ModContainer {
         }
     }
 
-    public static final Map<Class<? extends net.minecraftforge.eventbus.api.Event>, BiFunction<Object, IModContainer, ? extends Event>> EVENT_MAP;
+    public static final Map<Class<? extends IModBusEvent>, BiFunction<Object, IModContainer, ? extends Event>> EVENT_MAP;
 
     static {
         try {
@@ -86,10 +86,10 @@ public final class ForgeModContainer extends ModContainer {
                 @Override
                 @SuppressWarnings("unchecked")
                 public <T> void register(Class<T> type, BiFunction<T, IModContainer, Event> mapper) {
-                    if (!net.minecraftforge.eventbus.api.Event.class.isAssignableFrom(type)) {
-                        throw new UnsupportedOperationException();
+                    if (!IModBusEvent.class.isAssignableFrom(type)) {
+                        throw new UnsupportedOperationException("No support for event: " + type);
                     }
-                    EVENT_MAP.put((Class<? extends net.minecraftforge.eventbus.api.Event>) type, (BiFunction<Object, IModContainer, ? extends Event>) mapper);
+                    EVENT_MAP.put((Class<? extends IModBusEvent>) type, (BiFunction<Object, IModContainer, ? extends Event>) mapper);
                 }
 
             });

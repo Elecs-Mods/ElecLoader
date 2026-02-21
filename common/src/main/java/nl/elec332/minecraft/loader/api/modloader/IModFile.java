@@ -4,12 +4,10 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 
 import java.lang.annotation.ElementType;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 
 /**
  * Created by Elec332 on 17-09-2023
@@ -19,11 +17,22 @@ import java.util.function.Consumer;
 public interface IModFile {
 
     /**
-     * Scans this file for all classes and packages.
+     * Scans this file for all (file) entries it contains.
      *
      * @param consumer The listener
      */
-    void scanFile(Consumer<Path> consumer);
+    default void scanFile(IModFileResource.Visitor consumer) {
+        scanFile("", consumer);
+    }
+
+    /**
+     * Scans this file for all (file) entries it contains, starting at the provided folder.
+     * If the folder does not exist, no error is thrown and this function immediately returns
+     *
+     * @param startFolder The internal folder from where to start scanning
+     * @param consumer    The listener
+     */
+    void scanFile(String startFolder, IModFileResource.Visitor consumer);
 
     /**
      * @return A list about the mods contained in this file,
@@ -51,13 +60,13 @@ public interface IModFile {
     Set<ClassData> getClasses();
 
     /**
-     * Attempts to find the provided path in this file.
-     * Does not throw an exception if the path was not found, but returns an empty {@link Optional} instead.
+     * Attempts to find the provided entry in this file.
+     * Does not throw an exception if the entry was not found (or if it was aa directory), but returns an empty {@link Optional} instead.
      *
      * @param file The requested resource
      * @return The path to the requested resource
      */
-    Optional<Path> findPath(String file);
+    Optional<IModFileResource> findResource(String file);
 
     /**
      * @return The path of the first root file.

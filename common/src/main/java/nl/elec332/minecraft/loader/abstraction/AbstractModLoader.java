@@ -17,7 +17,6 @@ import org.objectweb.asm.ClassReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -125,8 +124,11 @@ public abstract class AbstractModLoader<T> implements IModLoader {
     }
 
     protected void scanAnnotations(IModFile source, Set<IModFile.ClassData> classes, Set<IModFile.RawAnnotationData> annotations) {
-        source.scanFile(path -> {
-            try (InputStream in = Files.newInputStream(path)) {
+        source.scanFile((path, entry) -> {
+            if (!path.endsWith(".class")) {
+                return;
+            }
+            try (InputStream in = entry.open()) {
                 AnnotationFinder av = new AnnotationFinder();
                 ClassReader cr = new ClassReader(in);
                 cr.accept(av, 0);

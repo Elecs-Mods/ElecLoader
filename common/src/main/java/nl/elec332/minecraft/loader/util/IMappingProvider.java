@@ -1,6 +1,7 @@
 package nl.elec332.minecraft.loader.util;
 
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
+import nl.elec332.minecraft.loader.api.modloader.IModFileResource;
 import nl.elec332.minecraft.loader.api.modloader.MappingType;
 import nl.elec332.minecraft.repackaged.net.neoforged.srgutils.IMappingFile;
 import nl.elec332.minecraft.repackaged.net.neoforged.srgutils.INamedMappingFile;
@@ -23,6 +24,17 @@ public interface IMappingProvider {
     static Optional<INamedMappingFile> readMappings(Path path) {
         if (path != null) {
             try (InputStream is = Objects.requireNonNull(Files.newInputStream(path))) {
+                return Optional.of(INamedMappingFile.load(is));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return Optional.empty();
+    }
+
+    static Optional<INamedMappingFile> readMappings(IModFileResource resource) {
+        if (resource != null) {
+            try (InputStream is = Objects.requireNonNull(resource.open())) {
                 return Optional.of(INamedMappingFile.load(is));
             } catch (Exception e) {
                 throw new RuntimeException(e);

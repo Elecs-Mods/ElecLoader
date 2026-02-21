@@ -1,6 +1,7 @@
 package nl.elec332.minecraft.loader.abstraction;
 
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
+import nl.elec332.minecraft.loader.api.modloader.IModFileResource;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -10,7 +11,9 @@ import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -78,34 +81,33 @@ public class PathModFile extends AbstractModFile implements IModFile.FileLister 
     private final Set<String> files = new HashSet<>(), files_ = Collections.unmodifiableSet(files);
 
     @Override
-    public void scanFile(Consumer<Path> consumer) {
+    public void scanFile(String startFolder, IModFileResource.Visitor consumer) {
+        PathModFileResource resource = new PathModFileResource(null, true);
         pathAccessor.accept(root -> {
-            try (Stream<Path> files = Files.find(root, Integer.MAX_VALUE, (p, a) -> {
-                if (p.getNameCount() == 0) {
-                    return false;
-                }
-                if (p.getFileName().toString().endsWith(".class")) {
+            iterate(startFolder, root, (p, a) -> {
+                if (a.isRegularFile()) {
                     if (!scanned) {
                         this.files.add(root.relativize(p).toString());
-                        this.classPaths.add(root.relativize(p).toString());
+                        if (p.getFileName().toString().endsWith(".class")) {
+                            this.classPaths.add(root.relativize(p).toString());
+                        }
                     }
                     return true;
+                }
+                if (p.getNameCount() == 0) {
+                    return false;
                 }
                 if (!scanned) {
                     p = root.relativize(p);
                     if (a.isDirectory() && !(p.startsWith("assets") || p.startsWith("data") || p.startsWith("META-INF"))) {
                         this.pack.add(p.toString());
                     }
-                    if (a.isRegularFile()) {
-                        this.files.add(p.toString());
-                    }
                 }
                 return false;
-            })) {
-                files.forEach(consumer);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            }, p -> {
+                resource.path = p;
+                consumer.visit(root.relativize(p).toString(), resource);
+            });
         });
         if (!scanned) {
             this.pack.remove("");
@@ -113,12 +115,32 @@ public class PathModFile extends AbstractModFile implements IModFile.FileLister 
         }
     }
 
+    public static void iterate(String startFolder, Path root, BiPredicate<Path, BasicFileAttributes> matcher, Consumer<Path> consumer) {
+        Path start;
+        if (startFolder == null || startFolder.isEmpty()) {
+            start = root;
+        } else {
+            start = root.resolve(startFolder).normalize();
+        }
+        if (!start.startsWith(root)) {
+            return;
+        }
+        if (!Files.isDirectory(start)) {
+            return;
+        }
+        try (Stream<Path> files = Files.find(root, Integer.MAX_VALUE, matcher)) {
+            files.forEach(consumer);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
-    public Optional<Path> findPath(String file) {
+    public Optional<IModFileResource> findResource(String file) {
         for (Path root : root) {
             Path path = root.resolve(file.replace("/", root.getFileSystem().getSeparator()));
             if (Files.exists(path)) {
-                return Optional.of(path);
+                return Optional.of(new PathModFileResource(path, false));
             }
         }
         return Optional.empty();
@@ -126,7 +148,7 @@ public class PathModFile extends AbstractModFile implements IModFile.FileLister 
 
     @Override
     protected void scanFile() {
-        scanFile(p -> {});
+        scanFile((p, r) -> {});
     }
 
     @Override

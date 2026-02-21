@@ -37,7 +37,7 @@ final class SideCleaner implements IClassTransformer {
         this.logger = logger;
         this.dist = dist;
         this.targets = Collections.unmodifiableSet(targets);
-        logger.info("Initializing SideCleaner for " + this.targets.size() + " target" + (this.targets.size() == 1 ? "" : "s"));
+        logger.info("Initializing SideCleaner for {} target{}", this.targets.size(), this.targets.size() == 1 ? "" : "s");
     }
 
     private final Logger logger;
@@ -49,7 +49,7 @@ final class SideCleaner implements IClassTransformer {
 
     @Override
     public String getName() {
-        return "SideCleaner";
+        return "side_cleaner";
     }
 
     @Override

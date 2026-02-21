@@ -36,7 +36,7 @@ public final class NeoModContainer extends ModContainer {
         this.workQueue = new DeferredWorkQueue<>();
 
         elecModContainer = ElecModLoader.getModLoader().useDiscoveredMod(info.getModId(), (meta, types) -> new ElecModContainer(meta, types, name -> {
-            var layer = gameLayer.findModule(info.getOwningFile().moduleName()).orElseThrow();
+            var layer = gameLayer.findModule(info.getOwningFile().getFile().getId()).orElseThrow();
             return Class.forName(layer, name);
         }, (e, t) -> new ModLoadingException(ModLoadingIssue.error(e == ElecModContainer.ErrorType.CLASSLOAD ? "fml.modloadingissue.failedtoloadmodclass" : "fml.modloadingissue.failedtoloadmod").withCause(t).withAffectedMod(info)),
                 () -> this.workQueue::enqueueDeferredWork));
@@ -59,6 +59,7 @@ public final class NeoModContainer extends ModContainer {
     private final net.neoforged.bus.api.IEventBus neoEventBus;
     private final DeferredWorkQueue<Runnable> workQueue;
 
+    @SuppressWarnings("UnstableApiUsage")
     private void onNeoEventFailed(net.neoforged.bus.api.IEventBus iEventBus, net.neoforged.bus.api.Event event, net.neoforged.bus.api.EventListener[] iEventListeners, int i, Throwable throwable) {
         LOGGER.error(new net.neoforged.bus.EventBusErrorMessage(event, i, iEventListeners, throwable));
     }

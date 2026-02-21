@@ -36,7 +36,7 @@ public class AnnotationFinder extends ClassVisitor {
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         this.type = Type.getObjectType(name);
-        this.superType = superName != null && superName.length() > 0 ? Type.getObjectType(superName) : null;
+        this.superType = superName != null && !superName.isEmpty() ? Type.getObjectType(superName) : null;
         this.interfaces = Stream.of(interfaces).map(Type::getObjectType).collect(Collectors.toSet());
     }
 

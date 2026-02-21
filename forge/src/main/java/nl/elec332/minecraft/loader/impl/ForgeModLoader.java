@@ -10,6 +10,8 @@ import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.versions.forge.ForgeVersion;
 import nl.elec332.minecraft.loader.abstraction.AbstractModFile;
 import nl.elec332.minecraft.loader.abstraction.AbstractModLoader;
+import nl.elec332.minecraft.loader.abstraction.PathModFile;
+import nl.elec332.minecraft.loader.abstraction.PathModFileResource;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationData;
 import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
@@ -24,11 +26,11 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 
 /**
  * Created by Elec332 on 01-02-2024
  */
+@SuppressWarnings("UnstableApiUsage")
 final class ForgeModLoader extends AbstractModLoader<ModInfo> {
 
     public ForgeModLoader() {
@@ -38,15 +40,20 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
             final ModFile mf = mi.getOwningFile().getFile();
 
             @Override
-            public void scanFile(Consumer<Path> consumer) {
-                this.mf.scanFile(consumer);
+            public void scanFile(String startFolder, IModFileResource.Visitor consumer) {
+                Path root = mf.getSecureJar().getRootPath();
+                PathModFileResource resource = new PathModFileResource(null, true);
+                PathModFile.iterate(startFolder, root, (p, a) -> a.isRegularFile(), p -> {
+                    resource.path = p;
+                    consumer.visit(root.relativize(p).toString(), resource);
+                });
             }
 
             @Override
-            public Optional<Path> findPath(String file) {
+            public Optional<IModFileResource> findResource(String file) {
                 Path p = mf.findResource(file);
                 if (Files.exists(p)) {
-                    return Optional.of(p);
+                    return Optional.of(new PathModFileResource(p, false));
                 }
                 return Optional.empty();
             }
@@ -59,7 +66,11 @@ final class ForgeModLoader extends AbstractModLoader<ModInfo> {
 
             @Override
             protected void scanFile() {
-                scanFile(p -> this.classPaths.add(p.toString()));
+                scanFile((p, r) -> {
+                    if (p.endsWith(".class")) {
+                        this.classPaths.add(p);
+                    }
+                });
                 this.pack.addAll(this.mf.getSecureJar().getPackages());
             }
 

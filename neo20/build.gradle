@@ -10,4 +10,5 @@ dependencies {
     }
     compileOnly project(":repackaged")
     compileOnly project(":common")
+    compileOnly project(":neo")
 }
