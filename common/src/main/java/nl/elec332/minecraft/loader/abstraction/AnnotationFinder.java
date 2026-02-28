@@ -229,7 +229,7 @@ public class AnnotationFinder extends ClassVisitor {
 
     public void accumulate(Set<IModFile.ClassData> classes, Set<IModFile.RawAnnotationData> annotations) {
         classes.add(new IModFile.ClassData(type, superType, interfaces));
-        annotations.addAll(this.annotations.stream().map(h -> h.fromData(this.type)).toList());
+        annotations.addAll(this.annotations.stream().map(h -> h.fromData(this.type)).collect(Collectors.toList()));
     }
 
 }

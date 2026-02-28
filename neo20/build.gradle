@@ -12,3 +12,7 @@ dependencies {
     compileOnly project(":common")
     compileOnly project(":neo")
 }
+
+compileJava {
+    getOptions().setRelease(17)
+}

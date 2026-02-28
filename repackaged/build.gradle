@@ -5,14 +5,14 @@ buildscript {
     dependencies {
         //Can's add it as plugin, as it's already on classpath from root project,
         //except when trying to use ShadowJar gradle freaks out complaining the class isn't on the classpath...
-        classpath "com.github.johnrengelman:shadow:8.1.1"
+        classpath "com.gradleup.shadow:shadow-gradle-plugin:9.2.2"
     }
 }
 
 plugins {
     id "java-library"
 //    id "com.github.johnrengelman.shadow" version "8.1.1"
-    id "org.jetbrains.gradle.plugin.idea-ext" version "1.1.7"
+    id "org.jetbrains.gradle.plugin.idea-ext" version "1.4.1"
 }
 
 group = "nl.elec332.minecraft.repacked"
@@ -70,8 +70,8 @@ tasks.register("makeRepackagedJar", ShadowJar) {
     configurations = [project.configurations.shadowSource]
     exclude("META-INF/maven/")
 
-    enableRelocation true
-    relocationPrefix "nl.elec332.minecraft.repackaged"
+    enableAutoRelocation = true
+    relocationPrefix = "nl.elec332.minecraft.repackaged"
 }
 
 tasks.register("fakeRepackagedClasses", Copy) {

@@ -24,11 +24,7 @@ public interface IModFileResource {
      * @return All the data referenced by this resource.
      * @throws IOException If reading all the data failed.
      */
-    default byte[] readAllBytes() throws IOException {
-        try (var stream = open()) {
-            return stream.readAllBytes();
-        }
-    }
+    byte[] readAllBytes() throws IOException;
 
     /**
      * Create a copy of this resource reference that can be held onto.

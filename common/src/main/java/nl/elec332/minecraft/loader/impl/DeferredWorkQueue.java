@@ -34,7 +34,7 @@ public class DeferredWorkQueue<T> {
 
     public void processQueue(ModLoadingStage stage, Consumer<T> processor) {
         synchronized (this.workQueue) {
-            var runnables = this.workQueue.get(stage);
+            ConcurrentLinkedDeque<T> runnables = this.workQueue.get(stage);
             if (runnables == null) {
                 throw new IllegalArgumentException("Stage already processed: " + stage.getName());
             }

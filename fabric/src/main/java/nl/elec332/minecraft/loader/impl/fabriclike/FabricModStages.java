@@ -8,6 +8,7 @@ import nl.elec332.minecraft.loader.impl.ElecModContainer;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
 import nl.elec332.minecraft.loader.mod.IModLoaderEventHandler;
 import nl.elec332.minecraft.loader.mod.event.*;
+import nl.elec332.minecraft.loader.util.J8Support;
 import nl.elec332.minecraft.loader.util.LateObject;
 
 import java.util.Map;
@@ -22,7 +23,7 @@ public final class FabricModStages {
         ElecModLoader.getModLoader().useDiscoveredMods((meta, types) -> {
             LateObject<BiConsumer<ModLoadingStage, Runnable>> reg = new LateObject<>();
             final ElecModContainer ret = new ElecModContainer(meta, types, Class::forName, (e, t) -> new RuntimeException("Failed to " + e + " mod " + meta.getModId(), t), reg);
-            reg.set(((stage, runnable) -> FabricModStages.DEFERRED_WORK_QUEUE.enqueueDeferredWork(stage, Map.entry(ret, runnable))));
+            reg.set(((stage, runnable) -> FabricModStages.DEFERRED_WORK_QUEUE.enqueueDeferredWork(stage, J8Support.entry(ret, runnable))));
             return ret;
         });
         ElecModLoader.getModLoader().getMods().forEach(mc -> ((ElecModContainer) mc).constructMod());
@@ -35,9 +36,14 @@ public final class FabricModStages {
         IModLoaderEventHandler.INSTANCE.postModEvent(CommonSetupEvent::new);
         processQueue(ModLoadingStage.COMMON_SETUP);
         switch (dist) {
-            case CLIENT -> IModLoaderEventHandler.INSTANCE.postModEvent(ClientSetupEvent::new);
-            case DEDICATED_SERVER -> IModLoaderEventHandler.INSTANCE.postModEvent(ServerSetupEvent::new);
-            default -> throw new IllegalArgumentException("Unknown state: " + dist.name());
+            case CLIENT:
+                IModLoaderEventHandler.INSTANCE.postModEvent(ClientSetupEvent::new);
+                break;
+            case DEDICATED_SERVER:
+                IModLoaderEventHandler.INSTANCE.postModEvent(ServerSetupEvent::new);
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown state: " + dist.name());
         }
         processQueue(ModLoadingStage.SIDED_SETUP);
     }

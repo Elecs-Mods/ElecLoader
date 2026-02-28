@@ -33,7 +33,7 @@ public class DynamicURLLoader extends URLStreamHandler {
     public static Map.Entry<URL, BiConsumer<String, byte[]>> create() {
         try {
             final DynamicURLLoader loader = new DynamicURLLoader(new HashMap<>());
-            return Map.entry(new URL(UUID.randomUUID().toString(), null, -1, "/", loader), loader.providers::put);
+            return J8Support.entry(new URL(UUID.randomUUID().toString(), null, -1, "/", loader), loader.providers::put);
         } catch (MalformedURLException e) {
             throw new RuntimeException("Unexpected error creating URL", e);
         }

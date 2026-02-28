@@ -1,6 +1,7 @@
 package nl.elec332.minecraft.loader.abstraction;
 
 import nl.elec332.minecraft.loader.api.modloader.IModFileResource;
+import nl.elec332.minecraft.loader.util.J8Support;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +24,13 @@ public final class PathModFileResource implements IModFileResource {
     @Override
     public InputStream open() throws IOException {
         return Files.newInputStream(path);
+    }
+
+    @Override
+    public byte[] readAllBytes() throws IOException {
+        try (InputStream stream = open()) {
+            return J8Support.readAllBytes(stream);
+        }
     }
 
     @Override

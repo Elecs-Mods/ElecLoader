@@ -25,7 +25,7 @@ public abstract class AbstractDynamicMixinPlugin implements IMixinConfigPlugin {
             Map<String, IClassTransformer> mixins = new HashMap<>();
             String mixinPackage = rawMixinPackage.replace('.', '/');
             addTransformers(r -> mixins.put(mixinPackage + "/GeneratedMixinClass_" + r.getName(), r));
-            for (final var entry : mixins.entrySet()) {
+            for (final Map.Entry<String, IClassTransformer> entry : mixins.entrySet()) {
                 defineClass(entry.getKey(), makeMixinBlob(entry.getKey(), entry.getValue().getTargetClasses()));
                 allMixins.put(entry.getKey().replace("/", "."), entry.getValue());
             }

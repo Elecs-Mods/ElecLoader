@@ -34,7 +34,7 @@ public enum LogicalSide {
     /**
      * @return If this marks a logical server
      */
-    public boolean isDedicatedServer() {
+    public boolean isServer() {
         return !isClient();
     }
 

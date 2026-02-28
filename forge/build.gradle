@@ -28,6 +28,10 @@ compileModImplJava {
     }
 }
 
+compileJava {
+    getOptions().setRelease(16) // Temporary, core must be J8 later
+}
+
 [jar, devJar].each {j ->
     j.manifest {
         attributes(["FMLModType": "LIBRARY"])

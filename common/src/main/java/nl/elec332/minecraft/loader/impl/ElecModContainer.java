@@ -94,10 +94,10 @@ public class ElecModContainer implements IModContainer {
         }
 
         // Allowed arguments for injection via constructor
-        Map<Class<?>, Object> allowedConstructorArgs = Map.of(
-                IEventBus.class, eventBus,
-                IModContainer.class, this,
-                Dist.class, IModLoader.INSTANCE.getDist());
+        Map<Class<?>, Object> allowedConstructorArgs = new HashMap<>();
+        allowedConstructorArgs.put(IEventBus.class, eventBus);
+        allowedConstructorArgs.put(IModContainer.class, this);
+        allowedConstructorArgs.put(Dist.class, IModLoader.INSTANCE.getDist());
 
         for (Class<?> modClass : this.modClasses) {
             try {

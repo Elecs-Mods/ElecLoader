@@ -4,10 +4,7 @@ import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Type;
 
 import java.lang.annotation.ElementType;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by Elec332 on 17-09-2023
@@ -83,24 +80,152 @@ public interface IModFile {
 
     /**
      * Used to provide information about annotations without actually loading any classes.
-     *
-     * @param annotationType The annotation type that was found
-     * @param targetType The element type marked by the annotation
-     * @param classType The class the element is in
-     * @param memberName The name of the member marked by the annotation
-     * @param annotationData The data contained in the annotation marker
      */
-    record RawAnnotationData(Type annotationType, ElementType targetType, Type classType, String memberName, Map<String, Object> annotationData) {
-    }
+     final class RawAnnotationData {
+
+        /**
+         * @param annotationType The annotation type that was found
+         * @param targetType The element type marked by the annotation
+         * @param classType The class the element is in
+         * @param memberName The name of the member marked by the annotation
+         * @param annotationData The data contained in the annotation marker
+         */
+        public RawAnnotationData(Type annotationType, ElementType targetType, Type classType, String memberName, Map<String, Object> annotationData) {
+            this.annotationType = annotationType;
+            this.targetType = targetType;
+            this.classType = classType;
+            this.memberName = memberName;
+            this.annotationData = annotationData;
+        }
+
+        private final Type annotationType;
+        private final ElementType targetType;
+        private final Type classType;
+        private final String memberName;
+        private final Map<String, Object> annotationData;
+
+        /**
+         * @return The annotation type that was found
+         */
+        public Type annotationType() {
+            return this.annotationType;
+        }
+
+        /**
+         * @return The element type marked by the annotation
+         */
+        public ElementType targetType() {
+            return this.targetType;
+        }
+
+        /**
+         * @return The class the element is in
+         */
+        public Type classType() {
+            return this.classType;
+        }
+
+        /**
+         * @return The name of the member marked by the annotation
+         */
+        public String memberName() {
+            return this.memberName;
+        }
+
+        /**
+         * @return The data contained in the annotation marker
+         */
+        public Map<String, Object> annotationData() {
+            return this.annotationData;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            RawAnnotationData that = (RawAnnotationData) o;
+            return Objects.equals(this.annotationType, that.annotationType) && this.targetType == that.targetType && Objects.equals(this.classType, that.classType) && Objects.equals(this.memberName, that.memberName) && Objects.equals(this.annotationData, that.annotationData);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.annotationType, this.targetType, this.classType, this.memberName, this.annotationData);
+        }
+
+        @Override
+        public String toString() {
+            return "RawAnnotationData[" +
+                    "annotationType=" + this.annotationType + ", " +
+                    "targetType=" + this.targetType + ", " +
+                    "classType=" + this.classType + ", " +
+                    "memberName=" + this.memberName + ", " +
+                    "annotationData=" + this.annotationData + "]";
+        }
+
+     }
 
     /**
      * Used to provide information about a class without actually loading it.
-     *
-     * @param clazz The class type being represented
-     * @param parent The parent of the represented class
-     * @param interfaces The interfaces implemented by the represented class
      */
-    record ClassData(Type clazz, Type parent, Set<Type> interfaces) {
+    final class ClassData {
+
+        /**
+         * @param clazz The class type being represented
+         * @param parent The parent of the represented class
+         * @param interfaces The interfaces implemented by the represented class
+         */
+        public ClassData(Type clazz, Type parent, Set<Type> interfaces) {
+            this.clazz = clazz;
+            this.parent = parent;
+            this.interfaces = interfaces;
+        }
+
+        private final Type clazz;
+        private final Type parent;
+        private final Set<Type> interfaces;
+
+        /**
+         * @return The class type being represented
+         */
+        public Type clazz() {
+            return this.clazz;
+        }
+
+        /**
+         * @return The parent of the represented class
+         */
+        public Type parent() {
+            return this.parent;
+        }
+
+        /**
+         * @return The interfaces implemented by the represented class
+         */
+        public Set<Type> interfaces() {
+            return this.interfaces;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ClassData that = (ClassData) o;
+            return Objects.equals(this.clazz, that.clazz) && Objects.equals(this.parent, that.parent) && Objects.equals(this.interfaces, that.interfaces);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.clazz, this.parent, this.interfaces);
+        }
+
+        @Override
+        public String toString() {
+            return "ClassData[" +
+                    "clazz=" + this.clazz + ", " +
+                    "parent=" + this.parent + ", " +
+                    "interfaces=" + this.interfaces + "]";
+        }
+
     }
 
     /**

@@ -64,7 +64,7 @@ public final class ElecModLoader {
                             .anyMatch(d -> d == IModLoader.INSTANCE.getDist());
                 })
                 .collect(Collectors.toMap(ad -> (String) Objects.requireNonNull(ad.getAnnotationInfo().get("value")), ad -> {
-                    var ret = new HashSet<IAnnotationData>();
+                    Set<IAnnotationData> ret = new HashSet<>();
                     ret.add(ad);
                     return ret;
                 }, (o1, o2) -> {
@@ -76,8 +76,8 @@ public final class ElecModLoader {
                     s.getValue().stream()
                             //Make the "most common" (supporting most distributions) entrypoint go first for Forge instance matching
                             .sorted((o1, o2) -> {
-                                var t1 = (List<?>) o1.getAnnotationInfo().get("dist");
-                                var t2 = (List<?>) o2.getAnnotationInfo().get("dist");
+                                List<?> t1 = (List<?>) o1.getAnnotationInfo().get("dist");
+                                List<?> t2 = (List<?>) o2.getAnnotationInfo().get("dist");
                                 if (Objects.equals(t1, t2)) {
                                     return 0;
                                 }
@@ -106,7 +106,7 @@ public final class ElecModLoader {
             return containers.values().stream();
         };
 
-        this.logger.debug("Discovered mods: " + this.modIds);
+        this.logger.debug("Discovered mods: {}", this.modIds);
     }
 
     private final Set<String> modIds;
@@ -150,7 +150,7 @@ public final class ElecModLoader {
         }
         AnnotationDataHandler.INSTANCE.attribute(IModLoader.INSTANCE.getMods());
         int s = this.containers.size();
-        this.logger.info("Finished modlist, found " + s + " mod" + (s == 1 ? "" : "s"));
+        this.logger.info("Finished modlist, found {} mod{}", s, s == 1 ? "" : "s");
     }
 
     private boolean discoveredAllMods() {
@@ -168,7 +168,7 @@ public final class ElecModLoader {
                 throw new IllegalStateException();
             }
             discoveredMods.forEach((name, type) -> {
-                var meta = IModLoader.INSTANCE.getModMetaData(name);
+                IModMetaData meta = IModLoader.INSTANCE.getModMetaData(name);
                 if (meta == null || !name.equals(meta.getModId())) {
                     throw new IllegalStateException();
                 }
@@ -193,7 +193,7 @@ public final class ElecModLoader {
             if (type == null) {
                 throw new IllegalArgumentException();
             }
-            var meta = IModLoader.INSTANCE.getModMetaData(name);
+            IModMetaData meta = IModLoader.INSTANCE.getModMetaData(name);
             if (meta == null || !name.equals(meta.getModId())) {
                 throw new IllegalStateException();
             }

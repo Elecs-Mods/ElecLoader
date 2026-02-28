@@ -7,6 +7,7 @@ import java.lang.annotation.ElementType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by Elec332 on 29-10-2016.
@@ -143,11 +144,55 @@ public interface IAnnotationData {
 
     /**
      * Record holding Enum data from annotations
-     *
-     * @param desc The enum description
-     * @param value The enum value (name)
      */
-    record EnumHolder(String desc, String value) {
+    final class EnumHolder {
+
+        /**
+         * @param desc The enum description
+         * @param value The enum value (name)
+         */
+        public EnumHolder(String desc, String value) {
+            this.desc = desc;
+            this.value = value;
+        }
+
+        private final String desc;
+        private final String value;
+
+        /**
+         * @return The enum description
+         */
+        public String desc() {
+            return this.desc;
+        }
+
+        /**
+         * @return The enum value (name)
+         */
+        public String value() {
+            return this.value;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == this) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            EnumHolder that = (EnumHolder) o;
+            return Objects.equals(this.desc, that.desc) && Objects.equals(this.value, that.value);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(this.desc, this.value);
+        }
+
+        @Override
+        public String toString() {
+            return "EnumHolder[" +
+                    "desc=" + this.desc + ", " +
+                    "value=" + this.value + "]";
+        }
+
     }
 
 }

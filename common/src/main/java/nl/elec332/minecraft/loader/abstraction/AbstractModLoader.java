@@ -11,6 +11,7 @@ import nl.elec332.minecraft.loader.api.modloader.IModFile;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.IModMetaData;
 import nl.elec332.minecraft.loader.impl.ElecModLoader;
+import nl.elec332.minecraft.loader.util.J8Support;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 
@@ -70,7 +71,7 @@ public abstract class AbstractModLoader<T> implements IModLoader {
                     up.add(p);
                     wl: //This doesn't exist, please look away...
                     while (true) {
-                        for (var list : mpcks.asMap().values()) {
+                        for (Collection<String> list : mpcks.asMap().values()) {
                             if (list.remove(p)) {
                                 continue wl;
                             }
@@ -91,7 +92,7 @@ public abstract class AbstractModLoader<T> implements IModLoader {
                 throw new IllegalStateException("Duplicate mod ID: " + mId);
             }
             modMetas.put(mId, meta);
-            packageInfo.add(Map.entry(meta,  ImmutableSet.copyOf(mpcks.get(mod))));
+            packageInfo.add(J8Support.entry(meta,  ImmutableSet.copyOf(mpcks.get(mod))));
         });
         scanAnnotations();
     }
@@ -176,7 +177,7 @@ public abstract class AbstractModLoader<T> implements IModLoader {
     @Override
     public boolean hasWrongSideOnly(String clazz, IAnnotationDataHandler annotationData) {
         Set<IAnnotationData> ad = annotationData.getAnnotationsForClass(clazz).apply(org.objectweb.asm.Type.getType(OnlyIn.class));
-        for (var a : ad) {
+        for (IAnnotationData a : ad) {
             if (!a.isClass()) {
                 continue;
             }
@@ -286,7 +287,7 @@ public abstract class AbstractModLoader<T> implements IModLoader {
             Objects.requireNonNull(classPath).remove(null);
             checkDuplicates(fileMapper);
 
-            for (var entry : fileMapper.entrySet()) {
+            for (Map.Entry<Integer, IModFile> entry : fileMapper.entrySet()) {
                 final IModFile.FileLister file = (IModFile.FileLister) entry.getValue();
                 boolean[] r = {false};
                 classPath.removeIf(cl2 -> {

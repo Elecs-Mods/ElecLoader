@@ -39,7 +39,7 @@ final class MappingTransformer implements IClassTransformer {
     static void register(Consumer<IClassTransformer> registry, Function<Type, Set<IAnnotationData>> dataHandler) {
         MappingType loaderTarget = IModLoader.INSTANCE.getMappingTarget();
         MappingType runtime = IModLoader.INSTANCE.isDevelopmentEnvironment() ? MappingType.NAMED : loaderTarget;
-        Set<IMappingProvider> mappers = ModServiceLoader.loadModService(ServiceLoader.load(IMappingProvider.class, IMappingProvider.class.getClassLoader()));
+        Set<IMappingProvider> mappers = ModServiceLoader.loadService(IMappingProvider.class, IMappingProvider.class.getClassLoader());
         IModLoader.INSTANCE.getModFiles().forEach(f -> {
             Optional<IModFileResource> mff = f.findResource(JarFile.MANIFEST_NAME);
             MappingType type;

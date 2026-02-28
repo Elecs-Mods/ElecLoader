@@ -2,6 +2,7 @@ package nl.elec332.minecraft.loader.impl.fmod;
 
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.forgespi.language.IConfigurable;
+import net.minecraftforge.forgespi.language.IModInfo;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.MappingType;
 import nl.elec332.minecraft.loader.impl.LoaderInitializer;
@@ -55,7 +56,7 @@ public final class ForgeMixinPlugin implements IMixinConfigPlugin {
                             String entry = IModLoader.INSTANCE.getMappingTarget() == MappingType.NAMED ? "named_forgemixins" : "forgemixins";
                             try {
                                 //Use string-array for <1.19.2 support
-                                return cfg.getConfigList(new String[]{entry}).stream().flatMap(e -> e.<String>getConfigElement(new String[]{"config"}).stream());
+                                return cfg.getConfigList(new String[]{entry}).stream().flatMap(e -> e.<String>getConfigElement(new String[]{"config"}).map(Stream::of).orElse(Stream.empty()));
                             } catch (Exception e) {
                                 return Stream.empty();
                             }
@@ -69,8 +70,8 @@ public final class ForgeMixinPlugin implements IMixinConfigPlugin {
 
     @SuppressWarnings("UnstableApiUsage")
     private static Stream<IConfigurable> getModConfigurations() {
-        return LoadingModList.get().getMods().stream()
-                .map(m -> m.getOwningFile().getConfig());
+        return ((List<?>) LoadingModList.get().getMods()).stream()
+                .map(m -> ((IModInfo) m).getOwningFile().getConfig());
     }
 
     private static boolean isForge() {

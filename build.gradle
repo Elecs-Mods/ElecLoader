@@ -10,7 +10,7 @@ import java.util.stream.Collectors
 buildscript {
     dependencies {
         classpath "net.neoforged:JarJarMetadata:0.4.1"
-        classpath "com.github.johnrengelman:shadow:8.1.1"
+        classpath "com.gradleup.shadow:shadow-gradle-plugin:9.2.2"
     }
 }
 
@@ -27,6 +27,7 @@ tasks.register("modImplJar", ShadowJar) {
     destinationDirectory = project.layout.buildDirectory.dir("subLibs")
     archiveBaseName = "ElecLoaderMod"
 
+    duplicatesStrategy DuplicatesStrategy.INCLUDE
     mergeServiceFiles()
     manifest {
         attributes(["Implementation-Title": "modImpl"])
@@ -53,12 +54,13 @@ tasks.register("devJar", ShadowJar) {
 tasks.assemble.dependsOn devJar
 
 [jar, devJar].each { j ->
+    j.duplicatesStrategy DuplicatesStrategy.INCLUDE
     j.mergeServiceFiles()
     j.manifest {
         attributes(["Implementation-Title": "all"])
     }
 
-    j.from(files(tasks.shadowWorkAround.outputs))
+    j.includedDependencies.from tasks.shadowWorkAround.outputs
 }
 
 tasks.withType(GenerateModuleMetadata.class).configureEach(meta -> meta.setEnabled(false))
@@ -68,15 +70,15 @@ subprojects {
     if (project.modProject) {
         afterEvaluate {
             rootProject.jar {
-                from remappedJar.outputs
+                includedDependencies.from remappedJar.outputs
                 mergeManifest(manifest, jar.manifest)
             }
             rootProject.devJar {
-                from devJar.outputs
+                includedDependencies.from devJar.outputs
                 mergeManifest(manifest, devJar.manifest)
             }
             if (project.tasks.findByName("modImplJar") != null) {
-                rootProject.tasks.modImplJar.from(project.tasks.modImplJar.outputs)
+                rootProject.tasks.modImplJar.includedDependencies.from(project.tasks.modImplJar.outputs)
                 mergeManifest(rootProject.tasks.modImplJar.manifest, project.tasks.modImplJar.manifest)
             }
             if (!project.hasModLoader) { //Common project

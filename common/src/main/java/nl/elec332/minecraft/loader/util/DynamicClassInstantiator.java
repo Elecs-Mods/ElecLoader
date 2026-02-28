@@ -1,5 +1,6 @@
 package nl.elec332.minecraft.loader.util;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.Map;
@@ -13,13 +14,13 @@ public class DynamicClassInstantiator {
 
     @SuppressWarnings("unchecked")
     public static <T> T newInstance(Class<T> clazz, Map<Class<?>, Object> allowedConstructorArgs) throws InvocationTargetException, InstantiationException, IllegalAccessException {
-        var constructors = clazz.getConstructors();
+        Constructor<?>[] constructors = clazz.getConstructors();
         if (constructors.length != 1) {
             throw new RuntimeException("Class must have exactly 1 public constructor, found " + constructors.length);
         }
-        var constructor = constructors[0];
+        Constructor<?> constructor = constructors[0];
 
-        var parameterTypes = constructor.getParameterTypes();
+        Class<?>[] parameterTypes = constructor.getParameterTypes();
         Object[] constructorArgs = new Object[parameterTypes.length];
         Set<Class<?>> foundArgs = new HashSet<>();
 

@@ -70,7 +70,9 @@ public final class FabricLikeMixinPlugin extends AbstractDynamicMixinPlugin {
             return null;
         }
         try {
-            if (!addUrlMethod.trySetAccessible()) {
+            try {
+                addUrlMethod.setAccessible(true);
+            } catch (Throwable e) {
                 if (force) {
                     throw new IllegalAccessException("Failed to make URL method public!");
                 } else {

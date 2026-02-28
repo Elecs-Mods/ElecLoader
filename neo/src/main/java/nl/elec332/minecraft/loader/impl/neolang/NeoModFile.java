@@ -5,6 +5,7 @@ import net.neoforged.fml.loading.moddiscovery.ModFile;
 import net.neoforged.fml.loading.moddiscovery.ModFileInfo;
 import nl.elec332.minecraft.loader.abstraction.AbstractModFile;
 import nl.elec332.minecraft.loader.api.modloader.IModFileResource;
+import nl.elec332.minecraft.loader.util.J8Support;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -83,6 +84,13 @@ public class NeoModFile extends AbstractModFile {
         @Override
         public InputStream open() throws IOException {
             return this.neoResource.open();
+        }
+
+        @Override
+        public byte[] readAllBytes() throws IOException {
+            try (InputStream stream = open()) {
+                return J8Support.readAllBytes(stream);
+            }
         }
 
         @Override

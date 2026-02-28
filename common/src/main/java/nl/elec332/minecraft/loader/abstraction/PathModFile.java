@@ -2,12 +2,14 @@ package nl.elec332.minecraft.loader.abstraction;
 
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
 import nl.elec332.minecraft.loader.api.modloader.IModFileResource;
+import nl.elec332.minecraft.loader.util.J8Support;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,7 +32,7 @@ public class PathModFile extends AbstractModFile implements IModFile.FileLister 
     public static PathModFile of(URL... urls) {
         return of(Arrays.stream(urls).map(u -> {
             try {
-                return Path.of(u.toURI());
+                return J8Support.pathOf(u.toURI());
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -39,7 +41,7 @@ public class PathModFile extends AbstractModFile implements IModFile.FileLister 
 
     public static PathModFile of(URI... root) {
         return of(Arrays.stream(root)
-                .map(Path::of)
+                .map(J8Support::pathOf)
                 .collect(Collectors.toList()));
     }
 
@@ -49,7 +51,7 @@ public class PathModFile extends AbstractModFile implements IModFile.FileLister 
     }
 
     public static PathModFile of(Collection<Path> root) {
-        Set<Path> paths = root.stream().collect(Collectors.toUnmodifiableSet());
+        Set<Path> paths = Collections.unmodifiableSet(new HashSet<>(root));
         final Set<Consumer<Consumer<Path>>> accessors = new HashSet<>();
         for (Path path : paths) {
             try(Stream<Path> files = Files.walk(path)) {
@@ -57,7 +59,7 @@ public class PathModFile extends AbstractModFile implements IModFile.FileLister 
                     accessors.add(c -> c.accept(path));
                 } else {
                     accessors.add(c -> {
-                        try(var fs = FileSystems.newFileSystem(path)) {
+                        try(FileSystem fs = J8Support.newFileSystem(path)) {
                             c.accept(fs.getPath("/"));
                         } catch (Exception e) {
                             throw new RuntimeException(e);

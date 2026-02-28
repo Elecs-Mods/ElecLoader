@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by Elec332 on 18-03-2024
@@ -26,7 +27,7 @@ public final class DefaultMappingsProvider implements IMappingProvider {
                     file.findResource(pathName.replace(".tsrg", ".targets")).ifPresent(tp -> {
                         try (InputStream is = tp.open()) {
                             BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-                            targets.addAll(br.lines().toList());
+                            targets.addAll(br.lines().collect(Collectors.toList()));
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }

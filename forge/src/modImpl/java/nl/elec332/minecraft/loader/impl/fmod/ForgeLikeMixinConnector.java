@@ -26,7 +26,7 @@ public class ForgeLikeMixinConnector implements IMixinConnector {
     @Override
     public void connect() {
         try {
-            var plugins = getPlugins();
+            Map<String, ILaunchPluginService> plugins = getPlugins();
             Map<String, ILaunchPluginService> extraPlugins = new HashMap<>();
             addTransformers(c -> extraPlugins.put(c.getName(), new ILaunchPluginService() {
 

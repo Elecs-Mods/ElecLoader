@@ -10,6 +10,7 @@ import nl.elec332.minecraft.loader.api.modloader.IModContainer;
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
 import nl.elec332.minecraft.loader.api.modloader.IModLoader;
 import nl.elec332.minecraft.loader.api.modloader.ModLoadingStage;
+import nl.elec332.minecraft.loader.util.J8Support;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Type;
 
@@ -209,7 +210,7 @@ enum AnnotationDataHandler {
 
             @Override
             public Map<IModContainer, Set<IAnnotationData>> getModdedAnnotationMap(Type annotationType) {
-                return annotationDataM2.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().get(annotationType)));
+                return Collections.unmodifiableMap(annotationDataM2.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().get(annotationType))));
             }
 
             @Override
@@ -260,7 +261,7 @@ enum AnnotationDataHandler {
                     if (clazz.isEnum()) {
                         for (Object e : clazz.getEnumConstants()) {
                             if (e instanceof IAnnotationDataProcessor) {
-                                dataMap.put(Map.entry(importance, Map.entry((IAnnotationDataProcessor) e, entry.getKey())), ls);
+                                dataMap.put(J8Support.entry(importance, J8Support.entry((IAnnotationDataProcessor) e, entry.getKey())), ls);
                             }
                         }
                         eb = true;
@@ -272,7 +273,7 @@ enum AnnotationDataHandler {
                             throw new RuntimeException("Error invocating annotated IASMData class: " + data.getClassName(), e);
                         }
                         if (o instanceof IAnnotationDataProcessor) {
-                            dataMap.put(Map.entry(importance, Map.entry((IAnnotationDataProcessor) o, entry.getKey())), ls);
+                            dataMap.put(J8Support.entry(importance, J8Support.entry((IAnnotationDataProcessor) o, entry.getKey())), ls);
                         }
                     }
                 }
@@ -288,7 +289,7 @@ enum AnnotationDataHandler {
                             }
                             if (obj instanceof IAnnotationDataProcessor) {
                                 AnnotationDataProcessor annData = field.getAnnotation(AnnotationDataProcessor.class);
-                                dataMap.put(Map.entry(annData.importance(), Map.entry((IAnnotationDataProcessor) obj, entry.getKey())), annData.value());
+                                dataMap.put(J8Support.entry(annData.importance(), J8Support.entry((IAnnotationDataProcessor) obj, entry.getKey())), annData.value());
                             }
                         }
                     }

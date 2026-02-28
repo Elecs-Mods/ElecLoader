@@ -11,6 +11,7 @@ import nl.elec332.minecraft.loader.api.discovery.IAnnotationDataHandler;
 import nl.elec332.minecraft.loader.api.distmarker.Dist;
 import nl.elec332.minecraft.loader.api.modloader.IModFile;
 import nl.elec332.minecraft.loader.impl.LoaderConstants;
+import nl.elec332.minecraft.loader.util.J8Support;
 
 import java.net.URLClassLoader;
 import java.nio.file.Path;
@@ -37,7 +38,7 @@ public abstract class AbstractFabricBasedModLoader<T> extends AbstractModLoader<
 
         mfm.checkLibraries(classPath);
 
-        Map<PathModFile, Set<String>> classPathMods = classPath.stream()
+        Map<PathModFile, Set<String>> classPathMods = Collections.unmodifiableMap(classPath.stream()
                         .map(file -> {
                             Set<IModFile.RawAnnotationData> annotations = new HashSet<>();
                             scanAnnotations(file, new HashSet<>(), annotations);
@@ -48,16 +49,16 @@ public abstract class AbstractFabricBasedModLoader<T> extends AbstractModLoader<
                             if (s.isEmpty()) {
                                 return null;
                             }
-                            return Map.entry(file, s);
+                            return J8Support.entry(file, s);
                         }).filter(Objects::nonNull)
-                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
         mfm.checkFiles((mc, file) -> {
             if (!(file instanceof PathModFile)) {
                 return file;
             }
             String modId = modIdGetter.apply(mc);
-            for (var entry : classPathMods.entrySet()) {
+            for (Map.Entry<PathModFile, Set<String>> entry : classPathMods.entrySet()) {
                 if (entry.getValue().contains(modId)) {
                     entry.getValue().remove(modId);
                     return PathModFile.of((PathModFile) file, entry.getKey());
@@ -91,7 +92,7 @@ public abstract class AbstractFabricBasedModLoader<T> extends AbstractModLoader<
             return true;
         }
         Set<IAnnotationData> ad = annotationData.getAnnotationsForClass(clazz).apply(org.objectweb.asm.Type.getType(Environment.class));
-        for (var a : ad) {
+        for (IAnnotationData a : ad) {
             if (!a.isClass()) {
                 continue;
             }
